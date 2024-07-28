@@ -117,6 +117,7 @@ export default function CharacterBase({
                       <button
                         onClick={onStartRecording}
                         type="button"
+                        title="Start Recording"
                         className="inline-flex items-center justify-center rounded-full h-12 w-12 transition duration-500 ease-in-out text-gray-500 hover:bg-gray-300 focus:outline-none"
                       >
                         <svg
