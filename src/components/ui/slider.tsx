@@ -11,6 +11,7 @@ interface SliderProps {
 export const Slider: React.FC<SliderProps> = ({ value, onValueChange, min, max, step }) => {
   return (
     <input
+      title="Slider"
       type="range"
       min={min}
       max={max}
