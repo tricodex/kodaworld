@@ -10,7 +10,11 @@ export default function Toggle() {
     toggleHeight: 34,
     togglePadding: 3,
     animationDuration: 0.3,
-    borderRadius: 17
+    borderRadius: 17,
+    labelOn: 'ON',
+    labelOff: 'OFF',
+    showLabels: true,
+    labelColor: '#ffffff'
   });
 
   const [isChecked, setIsChecked] = useState(false);
@@ -72,6 +76,25 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(${config.toggleWidth - config.toggleHeight}px);
+}
+
+.toggle-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: ${config.labelColor};
+  transition: opacity ${config.animationDuration}s;
+}
+
+.toggle-label.on {
+  left: ${config.togglePadding}px;
+  opacity: ${isChecked ? 1 : 0};
+}
+
+.toggle-label.off {
+  right: ${config.togglePadding}px;
+  opacity: ${isChecked ? 0 : 1};
 }`;
 
     setCssCode(css);
@@ -80,7 +103,12 @@ input:checked + .slider:before {
     const html = `
 <label class="toggle">
   <input type="checkbox">
-  <span class="slider"></span>
+  <span class="slider">
+    ${config.showLabels ? `
+    <span class="toggle-label on">${config.labelOn}</span>
+    <span class="toggle-label off">${config.labelOff}</span>
+    ` : ''}
+  </span>
 </label>`;
 
     setHtmlCode(html);
@@ -97,7 +125,15 @@ root.style.setProperty('--toggle-width', '${config.toggleWidth}px');
 root.style.setProperty('--toggle-height', '${config.toggleHeight}px');
 root.style.setProperty('--toggle-padding', '${config.togglePadding}px');
 root.style.setProperty('--toggle-animation-duration', '${config.animationDuration}s');
-root.style.setProperty('--toggle-border-radius', '${config.borderRadius}px');`;
+root.style.setProperty('--toggle-border-radius', '${config.borderRadius}px');
+root.style.setProperty('--label-color', '${config.labelColor}');
+
+toggle.addEventListener('change', function() {
+  const labels = document.querySelectorAll('.toggle-label');
+  labels.forEach(label => {
+    label.style.opacity = label.classList.contains('on') === this.checked ? '1' : '0';
+  });
+});`;
 
     setJsCode(js);
   }
@@ -105,8 +141,8 @@ root.style.setProperty('--toggle-border-radius', '${config.borderRadius}px');`;
   return (
     <div className="flex flex-col md:flex-row">
       <div className="w-full md:w-1/2 p-4">
-        <h2 className="text-2xl font-bold mb-4">TogglePreview</h2>
-        <div style={{ backgroundColor: config.backgroundColor, padding: '20px' }}>
+        <h2 className="text-2xl font-bold mb-4">Toggle Preview</h2>
+        <div style={{ backgroundColor: config.backgroundColor, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <label
             style={{
               position: 'relative',
@@ -147,13 +183,45 @@ root.style.setProperty('--toggle-border-radius', '${config.borderRadius}px');`;
                   borderRadius: '50%',
                 }}
               />
+              {config.showLabels && (
+                <>
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: `${config.togglePadding}px`,
+                      transform: 'translateY(-50%)',
+                      color: config.labelColor,
+                      fontSize: '12px',
+                      opacity: isChecked ? 1 : 0,
+                      transition: `opacity ${config.animationDuration}s`,
+                    }}
+                  >
+                    {config.labelOn}
+                  </span>
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      right: `${config.togglePadding}px`,
+                      transform: 'translateY(-50%)',
+                      color: config.labelColor,
+                      fontSize: '12px',
+                      opacity: isChecked ? 0 : 1,
+                      transition: `opacity ${config.animationDuration}s`,
+                    }}
+                  >
+                    {config.labelOff}
+                  </span>
+                </>
+              )}
             </span>
           </label>
         </div>
 
         <h2 className="text-2xl font-bold mt-8 mb-4">Configuration</h2>
         <div className="space-y-4">
-          <div>
+        <div>
             <label htmlFor="backgroundColor" className="block">Background Color:</label>
             <input
               type="color"
@@ -241,6 +309,46 @@ root.style.setProperty('--toggle-border-radius', '${config.borderRadius}px');`;
               max="30"
               value={config.borderRadius}
               onChange={(e) => updateConfig('borderRadius', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="showLabels" className="block">Show Labels:</label>
+            <input
+              type="checkbox"
+              id="showLabels"
+              checked={config.showLabels}
+              onChange={(e) => updateConfig('showLabels', e.target.checked)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label htmlFor="labelOn" className="block">Label (ON):</label>
+            <input
+              type="text"
+              id="labelOn"
+              value={config.labelOn}
+              onChange={(e) => updateConfig('labelOn', e.target.value)}
+              className="w-full border rounded p-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="labelOff" className="block">Label (OFF):</label>
+            <input
+              type="text"
+              id="labelOff"
+              value={config.labelOff}
+              onChange={(e) => updateConfig('labelOff', e.target.value)}
+              className="w-full border rounded p-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="labelColor" className="block">Label Color:</label>
+            <input
+              type="color"
+              id="labelColor"
+              value={config.labelColor}
+              onChange={(e) => updateConfig('labelColor', e.target.value)}
               className="w-full"
             />
           </div>
