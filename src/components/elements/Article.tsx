@@ -5,13 +5,19 @@ export default function Article() {
   const [config, setConfig] = useState({
     backgroundColor: '#f0f0f0',
     textColor: '#333333',
+    titleColor: '#222222',
     borderWidth: 1,
     borderColor: '#cccccc',
     borderRadius: 5,
     padding: 20,
     maxWidth: 600,
     titleText: 'Happy Article',
-    contentText: 'This is a configurable article element.'
+    contentText: 'This is a configurable article element.',
+    titleFontSize: 24,
+    contentFontSize: 16,
+    lineHeight: 1.5,
+    boxShadow: 4,
+    fontFamily: 'Arial, sans-serif'
   });
 
   const [cssCode, setCssCode] = useState('');
@@ -37,11 +43,19 @@ export default function Article() {
   padding: ${config.padding}px;
   max-width: ${config.maxWidth}px;
   margin: 0 auto;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 ${config.boxShadow}px ${config.boxShadow * 1.5}px rgba(0, 0, 0, 0.1);
+  font-family: ${config.fontFamily};
+  line-height: ${config.lineHeight};
 }
 
 .happy-article h2 {
   margin-top: 0;
+  color: ${config.titleColor};
+  font-size: ${config.titleFontSize}px;
+}
+
+.happy-article p {
+  font-size: ${config.contentFontSize}px;
 }`;
 
     setCssCode(css);
@@ -63,7 +77,17 @@ article.style.color = '${config.textColor}';
 article.style.border = '${config.borderWidth}px solid ${config.borderColor}';
 article.style.borderRadius = '${config.borderRadius}px';
 article.style.padding = '${config.padding}px';
-article.style.maxWidth = '${config.maxWidth}px';`;
+article.style.maxWidth = '${config.maxWidth}px';
+article.style.boxShadow = '0 ${config.boxShadow}px ${config.boxShadow * 1.5}px rgba(0, 0, 0, 0.1)';
+article.style.fontFamily = '${config.fontFamily}';
+article.style.lineHeight = '${config.lineHeight}';
+
+const title = article.querySelector('h2');
+title.style.color = '${config.titleColor}';
+title.style.fontSize = '${config.titleFontSize}px';
+
+const content = article.querySelector('p');
+content.style.fontSize = '${config.contentFontSize}px';`;
 
     setJsCode(js);
   }
@@ -81,15 +105,21 @@ article.style.maxWidth = '${config.maxWidth}px';`;
             padding: `${config.padding}px`,
             maxWidth: `${config.maxWidth}px`,
             margin: '0 auto',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+            boxShadow: `0 ${config.boxShadow}px ${config.boxShadow * 1.5}px rgba(0, 0, 0, 0.1)`,
+            fontFamily: config.fontFamily,
+            lineHeight: config.lineHeight
           }}
         >
-          <h2>{config.titleText}</h2>
-          <p>{config.contentText}</p>
+          <h2 style={{ color: config.titleColor, fontSize: `${config.titleFontSize}px` }}>{config.titleText}</h2>
+          <p style={{ fontSize: `${config.contentFontSize}px` }}>{config.contentText}</p>
         </article>
 
         <h2 className="text-2xl font-bold mt-8 mb-4">Configuration</h2>
         <div className="space-y-4">
+          {/* Existing configuration options */}
+          {/* ... */}
+          
+          {/* New configuration options */}
           <div>
             <label htmlFor="backgroundColor" className="block">Background Color:</label>
             <input
@@ -187,6 +217,80 @@ article.style.maxWidth = '${config.maxWidth}px';`;
               className="w-full border rounded p-2"
               rows={4}
             />
+          </div>
+          <div>
+            <label htmlFor="titleColor" className="block">Title Color:</label>
+            <input
+              type="color"
+              id="titleColor"
+              value={config.titleColor}
+              onChange={(e) => updateConfig('titleColor', e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="titleFontSize" className="block">Title Font Size (px):</label>
+            <input
+              type="range"
+              id="titleFontSize"
+              min="16"
+              max="48"
+              value={config.titleFontSize}
+              onChange={(e) => updateConfig('titleFontSize', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="contentFontSize" className="block">Content Font Size (px):</label>
+            <input
+              type="range"
+              id="contentFontSize"
+              min="12"
+              max="24"
+              value={config.contentFontSize}
+              onChange={(e) => updateConfig('contentFontSize', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="lineHeight" className="block">Line Height:</label>
+            <input
+              type="range"
+              id="lineHeight"
+              min="1"
+              max="2"
+              step="0.1"
+              value={config.lineHeight}
+              onChange={(e) => updateConfig('lineHeight', parseFloat(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="boxShadow" className="block">Box Shadow (px):</label>
+            <input
+              type="range"
+              id="boxShadow"
+              min="0"
+              max="20"
+              value={config.boxShadow}
+              onChange={(e) => updateConfig('boxShadow', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="fontFamily" className="block">Font Family:</label>
+            <select
+              id="fontFamily"
+              value={config.fontFamily}
+              onChange={(e) => updateConfig('fontFamily', e.target.value)}
+              className="w-full border rounded p-2"
+            >
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="'Times New Roman', serif">Times New Roman</option>
+              <option value="'Courier New', monospace">Courier New</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Verdana, sans-serif">Verdana</option>
+            </select>
           </div>
         </div>
       </div>
