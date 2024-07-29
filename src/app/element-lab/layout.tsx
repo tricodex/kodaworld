@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import KodaHeader from '@/components/KodaHeader';
+
 
 export default function ElementLabLayout({
   children,
@@ -6,7 +8,12 @@ export default function ElementLabLayout({
   children: React.ReactNode
 }) {
   return (
+    <div>
+    <KodaHeader />
     <div className="container mx-auto px-4 flex">
+      
+
+
       <aside className="w-64 bg-gray-100 p-4">
         <h2 className="text-xl font-bold mb-4">Elements</h2>
         <nav>
@@ -22,6 +29,8 @@ export default function ElementLabLayout({
       <main className="flex-1 p-4">
         {children}
       </main>
+    </div>
+    
     </div>
   )
 }
