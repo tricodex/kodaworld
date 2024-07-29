@@ -1,9 +1,11 @@
+'use client';
 import React, { useState, useEffect } from 'react'
 
 export default function DownloadButton() {
   const [config, setConfig] = useState({
     backgroundColor: '#110d1a',
     primaryColor: '#b197fc',
+    textColor: '#ffffff',
     animationDuration: 0.6,
     animationScale: 1.5,
     hoverTranslate: 5,
@@ -14,7 +16,9 @@ export default function DownloadButton() {
     buttonHeight: 60,
     shadowSize: 4,
     shadowColor: '#000000',
-    shadowOpacity: 0.2
+    shadowOpacity: 0.2,
+    buttonText: 'Download',
+    iconPosition: 'left'
   });
 
   const [cssCode, setCssCode] = useState('');
@@ -42,6 +46,7 @@ export default function DownloadButton() {
 :root {
   --color-background: ${config.backgroundColor};
   --color-primary: ${config.primaryColor};
+  --color-text: ${config.textColor};
   --animation-duration: ${config.animationDuration}s;
   --animation-scale: ${config.animationScale};
   --hover-translate: -${config.hoverTranslate}px;
@@ -59,12 +64,12 @@ export default function DownloadButton() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
+  color: var(--color-text);
   text-decoration: none;
   border-radius: ${config.borderRadius}px;
-  background-color: transparent;
+  background-color: var(--color-primary);
   backface-visibility: hidden;
-  box-shadow: inset 0 0 0 1px var(--color-primary), var(--shadow-size) var(--shadow-color);
+  box-shadow: var(--shadow-size) var(--shadow-color);
   transform: translateZ(0);
   font-size: var(--font-size);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -82,7 +87,7 @@ export default function DownloadButton() {
   height: 120%;
   width: 120%;
   border-radius: 20%;
-  background-color: var(--color-primary);
+  background-color: var(--color-background);
   scale: 0 0;
   translate: 0 140%;
   transition: scale var(--animation-duration) cubic-bezier(0.215, 0.61, 0.355, 1),
@@ -100,11 +105,11 @@ export default function DownloadButton() {
 
 .c-btn:hover {
   transform: translateY(var(--hover-translate));
-  box-shadow: inset 0 0 0 1px var(--color-primary), var(--shadow-size) var(--shadow-color);
+  box-shadow: var(--shadow-size) var(--shadow-color);
 }
 
 .c-btn:hover .c-btn__label {
-  color: var(--color-background);
+  color: var(--color-primary);
 }
 
 .c-btn:hover::after {
@@ -124,12 +129,21 @@ export default function DownloadButton() {
     const html = `
 <a href="#" class="c-btn">
   <span class="c-btn__label">
+    ${config.iconPosition === 'left' ? `
     <svg xmlns="http://www.w3.org/2000/svg" width="${config.iconSize}" height="${config.iconSize}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
       <polyline points="7 10 12 15 17 10"></polyline>
       <line x1="12" y1="15" x2="12" y2="3"></line>
     </svg>
-    Download
+    ` : ''}
+    ${config.buttonText}
+    ${config.iconPosition === 'right' ? `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${config.iconSize}" height="${config.iconSize}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="7 10 12 15 17 10"></polyline>
+      <line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+    ` : ''}
   </span>
 </a>`;
 
@@ -143,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   root.style.setProperty('--color-background', '${config.backgroundColor}');
   root.style.setProperty('--color-primary', '${config.primaryColor}');
+  root.style.setProperty('--color-text', '${config.textColor}');
   root.style.setProperty('--animation-duration', '${config.animationDuration}s');
   root.style.setProperty('--animation-scale', '${config.animationScale}');
   root.style.setProperty('--hover-translate', '-${config.hoverTranslate}px');
@@ -165,13 +180,14 @@ document.addEventListener('DOMContentLoaded', function() {
     <div className="flex flex-col md:flex-row">
       <div className="w-full md:w-1/2 p-4">
         <h2 className="text-2xl font-bold mb-4">Download Button Preview</h2>
-        <div style={{ backgroundColor: config.backgroundColor, padding: '20px' }}>
+        <div style={{ backgroundColor: config.backgroundColor, padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
           <a
             href="#"
             className="c-btn"
             style={{
               '--color-background': config.backgroundColor,
               '--color-primary': config.primaryColor,
+              '--color-text': config.textColor,
               '--animation-duration': `${config.animationDuration}s`,
               '--animation-scale': config.animationScale,
               '--hover-translate': `-${config.hoverTranslate}px`,
@@ -185,19 +201,28 @@ document.addEventListener('DOMContentLoaded', function() {
             } as React.CSSProperties}
           >
             <span className="c-btn__label">
-              <svg xmlns="http://www.w3.org/2000/svg" width={config.iconSize} height={config.iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              Download
+              {config.iconPosition === 'left' && (
+                <svg xmlns="http://www.w3.org/2000/svg" width={config.iconSize} height={config.iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              )}
+              {config.buttonText}
+              {config.iconPosition === 'right' && (
+                <svg xmlns="http://www.w3.org/2000/svg" width={config.iconSize} height={config.iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              )}
             </span>
           </a>
         </div>
 
         <h2 className="text-2xl font-bold mt-8 mb-4">Configuration</h2>
         <div className="space-y-4">
-          <div>
+        <div>
             <label htmlFor="backgroundColor" className="block">Background Color:</label>
             <input
               type="color"
@@ -350,6 +375,38 @@ document.addEventListener('DOMContentLoaded', function() {
               className="w-full"
             />
           </div>
+          <div>
+            <label htmlFor="textColor" className="block">Text Color:</label>
+            <input
+              type="color"
+              id="textColor"
+              value={config.textColor}
+              onChange={(e) => updateConfig('textColor', e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="buttonText" className="block">Button Text:</label>
+            <input
+              type="text"
+              id="buttonText"
+              value={config.buttonText}
+              onChange={(e) => updateConfig('buttonText', e.target.value)}
+              className="w-full border rounded p-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="iconPosition" className="block">Icon Position:</label>
+            <select
+              id="iconPosition"
+              value={config.iconPosition}
+              onChange={(e) => updateConfig('iconPosition', e.target.value)}
+              className="w-full border rounded p-2"
+            >
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
         </div>
       </div>
       <div className="w-full md:w-1/2 p-4">
@@ -372,4 +429,3 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   )
 }
-
