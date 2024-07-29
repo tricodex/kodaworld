@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 export default function Card() {
   const [config, setConfig] = useState({
@@ -18,19 +18,33 @@ export default function Card() {
     buttonTextColor: '#ffffff',
     buttonBorderRadius: 5,
     buttonPadding: 10,
-    buttonMarginBottom: 20
+    buttonMarginBottom: 20,
+    maxHeight: 400,
   });
 
   const [cssCode, setCssCode] = useState('');
   const [htmlCode, setHtmlCode] = useState('');
   const [jsCode, setJsCode] = useState('');
+  const [image, setImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     updateCodes();
-  }, [config]);
+  }, [config, image]);
 
   function updateConfig(key: string, value: any) {
     setConfig(prev => ({ ...prev, [key]: value }));
+  }
+
+  function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   function updateCodes() {
@@ -43,6 +57,7 @@ export default function Card() {
   border-radius: ${config.borderRadius}px;
   box-shadow: 0 ${config.boxShadow / 2}px ${config.boxShadow}px rgba(0, 0, 0, 0.1);
   width: ${config.width}px;
+  max-height: ${config.maxHeight}px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -50,10 +65,31 @@ export default function Card() {
   padding: 20px;
 }
 
+.happy-card-content {
+  width: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #888888 #f0f0f0;
+}
+
+.happy-card-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.happy-card-content::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.happy-card-content::-webkit-scrollbar-thumb {
+  background-color: #888888;
+  border-radius: 3px;
+}
+
 .happy-card img {
   width: 100%;
   border-radius: ${config.imageBorderRadius}px ${config.imageBorderRadius}px 0 0;
   margin-bottom: 15px;
+  object-fit: cover;
 }
 
 .happy-card h2 {
@@ -85,9 +121,11 @@ export default function Card() {
     // Update HTML code
     const html = `
 <div class="happy-card">
-  <img src="https://via.placeholder.com/300x200" alt="Card image">
-  <h2>${config.titleText}</h2>
-  <p>${config.contentText}</p>
+  <div class="happy-card-content">
+    <img src="${image || 'https://via.placeholder.com/300x200'}" alt="Card image">
+    <h2>${config.titleText}</h2>
+    <p>${config.contentText}</p>
+  </div>
   <button>${config.buttonText}</button>
 </div>`;
 
@@ -102,6 +140,7 @@ card.style.border = '${config.borderWidth}px solid ${config.borderColor}';
 card.style.borderRadius = '${config.borderRadius}px';
 card.style.boxShadow = '0 ${config.boxShadow / 2}px ${config.boxShadow}px rgba(0, 0, 0, 0.1)';
 card.style.width = '${config.width}px';
+card.style.maxHeight = '${config.maxHeight}px';
 
 const image = card.querySelector('img');
 image.style.borderRadius = '${config.imageBorderRadius}px ${config.imageBorderRadius}px 0 0';
@@ -128,6 +167,7 @@ button.style.marginBottom = '${config.buttonMarginBottom}px';`;
             borderRadius: `${config.borderRadius}px`,
             boxShadow: `0 ${config.boxShadow / 2}px ${config.boxShadow}px rgba(0, 0, 0, 0.1)`,
             width: `${config.width}px`,
+            maxHeight: `${config.maxHeight}px`,
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
@@ -135,17 +175,20 @@ button.style.marginBottom = '${config.buttonMarginBottom}px';`;
             padding: '20px',
           }}
         >
-          <img
-            src="https://via.placeholder.com/300x200"
-            alt="Card image"
-            style={{
-              width: '100%',
-              borderRadius: `${config.imageBorderRadius}px ${config.imageBorderRadius}px 0 0`,
-              marginBottom: '15px',
-            }}
-          />
-          <h2>{config.titleText}</h2>
-          <p>{config.contentText}</p>
+          <div style={{ width: '100%', overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#888888 #f0f0f0' }}>
+            <img
+              src={image || "https://via.placeholder.com/300x200"}
+              alt="Card image"
+              style={{
+                width: '100%',
+                borderRadius: `${config.imageBorderRadius}px ${config.imageBorderRadius}px 0 0`,
+                marginBottom: '15px',
+                objectFit: 'cover',
+              }}
+            />
+            <h2>{config.titleText}</h2>
+            <p>{config.contentText}</p>
+          </div>
           <button
             style={{
               backgroundColor: config.buttonColor,
@@ -164,8 +207,6 @@ button.style.marginBottom = '${config.buttonMarginBottom}px';`;
 
         <h2 className="text-2xl font-bold mt-8 mb-4">Configuration</h2>
         <div className="space-y-4">
-          {/* Add input fields for each configuration option */}
-          {/* Example for backgroundColor */}
           <div>
             <label htmlFor="backgroundColor" className="block">Background Color:</label>
             <input
@@ -176,7 +217,195 @@ button.style.marginBottom = '${config.buttonMarginBottom}px';`;
               className="w-full"
             />
           </div>
-          {/* Add similar input fields for other configuration options */}
+          <div>
+            <label htmlFor="textColor" className="block">Text Color:</label>
+            <input
+              type="color"
+              id="textColor"
+              value={config.textColor}
+              onChange={(e) => updateConfig('textColor', e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="borderWidth" className="block">Border Width:</label>
+            <input
+              type="range"
+              id="borderWidth"
+              min="0"
+              max="10"
+              value={config.borderWidth}
+              onChange={(e) => updateConfig('borderWidth', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="borderColor" className="block">Border Color:</label>
+            <input
+              type="color"
+              id="borderColor"
+              value={config.borderColor}
+              onChange={(e) => updateConfig('borderColor', e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="borderRadius" className="block">Border Radius:</label>
+            <input
+              type="range"
+              id="borderRadius"
+              min="0"
+              max="50"
+              value={config.borderRadius}
+              onChange={(e) => updateConfig('borderRadius', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="boxShadow" className="block">Box Shadow:</label>
+            <input
+              type="range"
+              id="boxShadow"
+              min="0"
+              max="50"
+              value={config.boxShadow}
+              onChange={(e) => updateConfig('boxShadow', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="width" className="block">Width:</label>
+            <input
+              type="range"
+              id="width"
+              min="200"
+              max="600"
+              value={config.width}
+              onChange={(e) => updateConfig('width', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="imageBorderRadius" className="block">Image Border Radius:</label>
+            <input
+              type="range"
+              id="imageBorderRadius"
+              min="0"
+              max="50"
+              value={config.imageBorderRadius}
+              onChange={(e) => updateConfig('imageBorderRadius', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="titleText" className="block">Title Text:</label>
+            <input
+              type="text"
+              id="titleText"
+              value={config.titleText}
+              onChange={(e) => updateConfig('titleText', e.target.value)}
+              className="w-full border rounded p-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="contentText" className="block">Content Text:</label>
+            <textarea
+              id="contentText"
+              value={config.contentText}
+              onChange={(e) => updateConfig('contentText', e.target.value)}
+              className="w-full border rounded p-2"
+              rows={4}
+            />
+          </div>
+          <div>
+            <label htmlFor="buttonText" className="block">Button Text:</label>
+            <input
+              type="text"
+              id="buttonText"
+              value={config.buttonText}
+              onChange={(e) => updateConfig('buttonText', e.target.value)}
+              className="w-full border rounded p-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="buttonColor" className="block">Button Color:</label>
+            <input
+              type="color"
+              id="buttonColor"
+              value={config.buttonColor}
+              onChange={(e) => updateConfig('buttonColor', e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="buttonTextColor" className="block">Button Text Color:</label>
+            <input
+              type="color"
+              id="buttonTextColor"
+              value={config.buttonTextColor}
+              onChange={(e) => updateConfig('buttonTextColor', e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="buttonBorderRadius" className="block">Button Border Radius:</label>
+            <input
+              type="range"
+              id="buttonBorderRadius"
+              min="0"
+              max="50"
+              value={config.buttonBorderRadius}
+              onChange={(e) => updateConfig('buttonBorderRadius', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="buttonPadding" className="block">Button Padding:</label>
+            <input
+              type="range"
+              id="buttonPadding"
+              min="5"
+              max="30"
+              value={config.buttonPadding}
+              onChange={(e) => updateConfig('buttonPadding', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="buttonMarginBottom" className="block">Button Bottom Margin:</label>
+            <input
+              type="range"
+              id="buttonMarginBottom"
+              min="0"
+              max="50"
+              value={config.buttonMarginBottom}
+              onChange={(e) => updateConfig('buttonMarginBottom', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="maxHeight" className="block">Max Height (px):</label>
+            <input
+              type="range"
+              id="maxHeight"
+              min="200"
+              max="800"
+              value={config.maxHeight}
+              onChange={(e) => updateConfig('maxHeight', parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="imageUpload" className="block">Upload Image:</label>
+            <input
+              type="file"
+              id="imageUpload"
+              accept="image/*"
+              onChange={handleImageUpload}
+              ref={fileInputRef}
+              className="w-full"
+            />
+          </div>
         </div>
       </div>
       <div className="w-full md:w-1/2 p-4">
