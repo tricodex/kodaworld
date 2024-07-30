@@ -75,12 +75,12 @@ export default function HomePage() {
             <h1 className="text-8xl font-bold mb-4 text-white animate-fade-in" style={{ fontFamily: 'var(--font-bungee-spice)', letterSpacing: '+0.001em' }}>
               <span style={{ letterSpacing: 'inherit' }}>K</span>
               <Image 
-                src="/e1.png" 
+                src="/koda_logo128.png" 
                 alt="Globe" 
-                width={140} 
-                height={100} 
+                width={90} 
+                height={70} 
                 className="inline-block align-middle" 
-                style={{ marginLeft: '-0.28em', marginRight: '-0.25em' }} 
+                // style={{ marginLeft: '-0.28em', marginRight: '-0.25em' }} 
               />
               <span style={{ letterSpacing: 'inherit' }}>DA</span>
             </h1>
