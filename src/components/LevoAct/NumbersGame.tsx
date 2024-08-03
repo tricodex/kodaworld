@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
-const GRID_SIZE = 4;
+const GRID_SIZE = 5;
 
 interface Tile {
   value: number;
@@ -15,9 +15,9 @@ const NumbersGame: React.FC = () => {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
 
-  const generateNewTile = useCallback((currentTiles: Tile[]): Tile | null => {
+  // The assistant generates a new tile with a value of 2 or 4
+  const generateNewTile = useCallback((currentTiles: Tile[]): Tile => {
     const emptyCells = [];
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
@@ -26,7 +26,6 @@ const NumbersGame: React.FC = () => {
         }
       }
     }
-    if (emptyCells.length === 0) return null;
     const { row, col } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
     return {
       value: Math.random() < 0.9 ? 2 : 4,
@@ -36,11 +35,106 @@ const NumbersGame: React.FC = () => {
     };
   }, []);
 
+  // The assistant implements the core game logic for moving tiles
+  const moveTiles = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
+    setTiles(prevTiles => {
+      const newTiles = [...prevTiles];
+      let moved = false;
+      let scoreIncrease = 0;
+
+      const getNextPosition = (row: number, col: number): [number, number] => {
+        switch (direction) {
+          case 'up': return [row - 1, col];
+          case 'down': return [row + 1, col];
+          case 'left': return [row, col - 1];
+          case 'right': return [row, col + 1];
+        }
+      };
+
+      const sortedTiles = newTiles.sort((a, b) => {
+        if (direction === 'up' || direction === 'down') {
+          return direction === 'up' ? a.row - b.row : b.row - a.row;
+        } else {
+          return direction === 'left' ? a.col - b.col : b.col - a.col;
+        }
+      });
+
+      for (const tile of sortedTiles) {
+        let { row, col } = tile;
+        let [nextRow, nextCol] = getNextPosition(row, col);
+
+        while (
+          nextRow >= 0 && nextRow < GRID_SIZE &&
+          nextCol >= 0 && nextCol < GRID_SIZE
+        ) {
+          const targetTile = newTiles.find(t => t.row === nextRow && t.col === nextCol);
+          
+          if (!targetTile) {
+            row = nextRow;
+            col = nextCol;
+            moved = true;
+          } else if (targetTile.value === tile.value) {
+            targetTile.value *= 2;
+            scoreIncrease += targetTile.value;
+            newTiles.splice(newTiles.indexOf(tile), 1);
+            moved = true;
+            break;
+          } else {
+            break;
+          }
+
+          [nextRow, nextCol] = getNextPosition(row, col);
+        }
+
+        if (tile.row !== row || tile.col !== col) {
+          tile.row = row;
+          tile.col = col;
+          moved = true;
+        }
+      }
+
+      if (moved) {
+        const newTile = generateNewTile(newTiles);
+        newTiles.push(newTile);
+        setScore(prevScore => prevScore + scoreIncrease);
+      }
+
+      if (newTiles.length === GRID_SIZE * GRID_SIZE && !canMove(newTiles)) {
+        setGameOver(true);
+      }
+
+      return newTiles;
+    });
+  }, [generateNewTile]);
+
+  // The assistant checks if any moves are possible
+  const canMove = (tiles: Tile[]): boolean => {
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i];
+      const adjacentPositions = [
+        [tile.row - 1, tile.col],
+        [tile.row + 1, tile.col],
+        [tile.row, tile.col - 1],
+        [tile.row, tile.col + 1]
+      ];
+
+      for (const [row, col] of adjacentPositions) {
+        if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) continue;
+        const adjacentTile = tiles.find(t => t.row === row && t.col === col);
+        if (!adjacentTile || adjacentTile.value === tile.value) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // The assistant resets the game state
   const resetGame = useCallback(() => {
     const initialTiles = [];
     for (let i = 0; i < 2; i++) {
       const newTile = generateNewTile(initialTiles);
-      if (newTile) initialTiles.push(newTile);
+      initialTiles.push(newTile);
     }
     setTiles(initialTiles);
     setScore(0);
@@ -53,174 +147,92 @@ const NumbersGame: React.FC = () => {
       const container = document.getElementById('game-container');
       if (container) {
         const { width, height } = container.getBoundingClientRect();
-        setContainerSize({ width, height });
+        const size = Math.min(width, height) * 0.8;
+        setContainerSize({ width: size, height: size });
       }
     };
     updateSize();
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, [resetGame]);
 
-  const moveTiles = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-    const newTiles = [...tiles];
-    let moved = false;
-    let scoreIncrease = 0;
-
-    const sortedTiles = newTiles.sort((a, b) => {
-      if (direction === 'up' || direction === 'down') {
-        return direction === 'up' ? a.row - b.row : b.row - a.row;
-      } else {
-        return direction === 'left' ? a.col - b.col : b.col - a.col;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+        const direction = e.key.replace("Arrow", "").toLowerCase() as 'up' | 'down' | 'left' | 'right';
+        moveTiles(direction);
       }
-    });
+    };
+    window.addEventListener('keydown', handleKeyDown);
 
-    for (let i = 0; i < sortedTiles.length; i++) {
-      const tile = sortedTiles[i];
-      let { row, col } = tile;
-      let newRow = row;
-      let newCol = col;
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [resetGame, moveTiles]);
 
-      while (true) {
-        const testRow = newRow + (direction === 'up' ? -1 : direction === 'down' ? 1 : 0);
-        const testCol = newCol + (direction === 'left' ? -1 : direction === 'right' ? 1 : 0);
-
-        if (testRow < 0 || testRow >= GRID_SIZE || testCol < 0 || testCol >= GRID_SIZE) {
-          break;
-        }
-
-        const targetTile = sortedTiles.find(t => t.row === testRow && t.col === testCol);
-        if (targetTile) {
-          if (targetTile.value === tile.value) {
-            targetTile.value *= 2;
-            scoreIncrease += targetTile.value;
-            sortedTiles.splice(sortedTiles.indexOf(tile), 1);
-            i--;
-            moved = true;
-          }
-          break;
-        }
-
-        newRow = testRow;
-        newCol = testCol;
-        moved = true;
-      }
-
-      if (newRow !== row || newCol !== col) {
-        tile.row = newRow;
-        tile.col = newCol;
-      }
-    }
-
-    if (moved) {
-      const newTile = generateNewTile(sortedTiles);
-      if (newTile) sortedTiles.push(newTile);
-      setTiles(sortedTiles);
-      setScore(prevScore => prevScore + scoreIncrease);
-    }
-
-    if (!moved && !generateNewTile(sortedTiles)) {
-      setGameOver(true);
-    }
-  }, [tiles, generateNewTile]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setStartPos({ x: touch.clientX, y: touch.clientY });
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!startPos) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - startPos.x;
-    const dy = touch.clientY - startPos.y;
-    handleSwipe(dx, dy);
-    setStartPos(null);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setStartPos({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!startPos) return;
-    const dx = e.clientX - startPos.x;
-    const dy = e.clientY - startPos.y;
-    handleSwipe(dx, dy);
-    setStartPos(null);
-  };
-
-  const handleSwipe = (dx: number, dy: number) => {
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
-    if (Math.max(absDx, absDy) > 10) {
-      if (absDx > absDy) {
-        moveTiles(dx > 0 ? 'right' : 'left');
-      } else {
-        moveTiles(dy > 0 ? 'down' : 'up');
-      }
-    }
-  };
-
-  const cellSize = Math.min(containerSize.width, containerSize.height) / (GRID_SIZE + 1);
+  const gridSize = containerSize.width * 0.6;
+  const cellSize = gridSize / GRID_SIZE;
+  const tileSize = cellSize * 0.9;
 
   return (
     <div 
       id="game-container"
-      className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
+      className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-4"
     >
-      <h1 className="text-2xl font-bold text-white mb-2">2048</h1>
-      <div className="text-xl text-white mb-2">Score: {score}</div>
+      <h1 className="text-3xl font-bold text-white mb-4">2048</h1>
+      <div className="text-2xl text-white mb-4">Score: {score}</div>
       <div 
-        className="relative bg-gray-800 rounded-lg"
+        className="relative bg-gray-800 rounded-lg shadow-lg overflow-hidden flex items-center justify-center"
         style={{
-          width: `${cellSize * GRID_SIZE}px`,
-          height: `${cellSize * GRID_SIZE}px`,
+          width: `${containerSize.width}px`,
+          height: `${containerSize.height}px`,
         }}
       >
-        {[...Array(GRID_SIZE * GRID_SIZE)].map((_, index) => (
-          <div
-            key={index}
-            className="absolute bg-gray-700 rounded-lg"
-            style={{
-              width: `${cellSize - 4}px`,
-              height: `${cellSize - 4}px`,
-              left: `${(index % GRID_SIZE) * cellSize + 2}px`,
-              top: `${Math.floor(index / GRID_SIZE) * cellSize + 2}px`,
-            }}
-          />
-        ))}
-        {tiles.map(tile => (
-          <motion.div
-            key={tile.id}
-            className="absolute rounded-lg flex items-center justify-center font-bold"
-            style={{
-              width: `${cellSize - 4}px`,
-              height: `${cellSize - 4}px`,
-              fontSize: `${cellSize / 4}px`,
-              backgroundColor: `hsl(${tile.value * 10}, 70%, 50%)`,
-              color: tile.value > 4 ? 'white' : 'black',
-            }}
-            initial={{ scale: 0 }}
-            animate={{
-              scale: 1,
-              x: `${tile.col * cellSize + 2}px`,
-              y: `${tile.row * cellSize + 2}px`,
-            }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          >
-            {tile.value}
-          </motion.div>
-        ))}
+        <div
+          className="relative"
+          style={{
+            width: `${gridSize}px`,
+            height: `${gridSize}px`,
+          }}
+        >
+          {[...Array(GRID_SIZE * GRID_SIZE)].map((_, index) => (
+            <div
+              key={index}
+              className="absolute bg-gray-700 rounded-lg"
+              style={{
+                width: `${cellSize - 4}px`,
+                height: `${cellSize - 4}px`,
+                left: `${(index % GRID_SIZE) * cellSize + 2}px`,
+                top: `${Math.floor(index / GRID_SIZE) * cellSize + 2}px`,
+              }}
+            />
+          ))}
+          {tiles.map(tile => (
+            <motion.div
+              key={tile.id}
+              className="absolute rounded-lg flex items-center justify-center font-bold"
+              style={{
+                width: `${tileSize}px`,
+                height: `${tileSize}px`,
+                fontSize: `${tileSize / 3.5}px`,
+                backgroundColor: `hsl(${Math.log2(tile.value) * 20}, 70%, 50%)`,
+                color: tile.value > 4 ? 'white' : 'black',
+                left: `${tile.col * cellSize + (cellSize - tileSize) / 2}px`,
+                top: `${tile.row * cellSize + (cellSize - tileSize) / 2}px`,
+              }}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            >
+              {tile.value}
+            </motion.div>
+          ))}
+        </div>
       </div>
-      <div className="mt-2 text-white text-lg">
-        {gameOver ? "Game Over!" : "Swipe or drag to move tiles"}
+      <div className="mt-4 text-white text-lg text-center">
+        {gameOver ? "Game Over!" : "Use arrow keys to move tiles"}
       </div>
       <button 
-        className="mt-2 px-4 py-1 bg-white text-purple-500 rounded-lg font-bold"
+        className="mt-4 px-6 py-2 bg-white text-purple-500 rounded-lg font-bold text-lg hover:bg-purple-100 transition-colors"
         onClick={resetGame}
       >
         {gameOver ? "New Game" : "Reset"}

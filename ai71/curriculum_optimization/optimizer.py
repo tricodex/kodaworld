@@ -1,6 +1,6 @@
 # ai71/curriculum_optimization/optimizer.py
 
-from ai71_api import AI71API
+from ..ai71_api import AI71API
 import json
 from typing import Dict, List
 

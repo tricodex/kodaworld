@@ -2,12 +2,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import CharacterBase from './CharacterBase';
+import ActivityLayout from '@/components/ActivityLayout';
 import ParticleGame from './LevoAct/ParticleGame';
 import ChemistryLabSim from './LevoAct/ChemistryLabSim';
 import PhysicsPuzzle from './LevoAct/PhysicsPuzzle';
 import NumbersGame from './LevoAct/NumbersGame';
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
@@ -31,11 +31,7 @@ declare global {
 }
 
 export default function LevoPage() {
-  const [showParticleGame, setShowParticleGame] = useState(false);
-  const [showChemistryLabSim, setShowChemistryLabSim] = useState(false);
-  const [showPhysicsPuzzle, setShowPhysicsPuzzle] = useState(false);
-  const [showNumbersGame, setShowNumbersGame] = useState(false);
-  const [showAITutor, setShowAITutor] = useState(false);
+  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -46,12 +42,6 @@ export default function LevoPage() {
   const [isAITutorLoading, setIsAITutorLoading] = useState(false);
   const AITutorMessagesEndRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
-
-  const toggleParticleGame = () => setShowParticleGame(!showParticleGame);
-  const toggleChemistryLabSim = () => setShowChemistryLabSim(!showChemistryLabSim);
-  const togglePhysicsPuzzle = () => setShowPhysicsPuzzle(!showPhysicsPuzzle);
-  const toggleNumbersGame = () => setShowNumbersGame(!showNumbersGame);
-  const toggleAITutor = () => setShowAITutor(!showAITutor);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -186,20 +176,90 @@ export default function LevoPage() {
     }
   };
 
+  const activities = [
+    { name: "AI Tutor", key: "AITutor" },
+    { name: "Particle Game", key: "ParticleGame" },
+    { name: "Chemistry Lab Simulator", key: "ChemistryLabSim" },
+    { name: "Physics Puzzle", key: "PhysicsPuzzle" },
+    { name: "Numbers Game", key: "NumbersGame" },
+  ];
+
+  const renderActivity = () => {
+    switch (currentActivity) {
+      case "AITutor":
+        return (
+          <div className="flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto mb-4">
+              {AITutorMessages.map((message, index) => (
+                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
+                  <div className={`flex items-end ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <Image
+                      src={message.role === 'user' ? "/animals/mina.png" : "/animals/levo.png"}
+                      alt={message.role === 'user' ? "User" : "AI"}
+                      width={24}
+                      height={24}
+                      className="rounded-full"
+                    />
+                    <div className={`max-w-xs mx-2 p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                      {message.content}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isAITutorLoading && (
+                <div className="flex justify-start mb-4">
+                  <div className="flex items-center bg-gray-200 rounded-lg px-4 py-2">
+                    <span className="animate-pulse">AI is thinking...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={AITutorMessagesEndRef} />
+            </div>
+            <div className="flex items-center mb-4">
+              <Input 
+                value={AITutorInput} 
+                onChange={(e) => setAITutorInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendAITutorMessage()}
+                placeholder="Ask AI Tutor a question..."
+                className="flex-grow mr-2"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={sendAITutorMessage} disabled={isAITutorLoading}>
+                      {isAITutorLoading ? "Sending..." : "Send"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Send your question to the AI Tutor</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Button onClick={handleAITutorClearHistory} variant="outline">
+              Clear History
+            </Button>
+          </div>
+        );
+      case "ParticleGame":
+        return <ParticleGame />;
+      case "ChemistryLabSim":
+        return <ChemistryLabSim />;
+      case "PhysicsPuzzle":
+        return <PhysicsPuzzle />;
+      case "NumbersGame":
+        return <NumbersGame />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="relative min-h-screen">
       <CharacterBase
-        backgroundImage="/backgrounds/levo-science-bg.jpg"
+        backgroundImage="/backgrounds/levo-science-bg.jpeg"
         characterName="Levo"
         subject="Science"
         chatDescription="Chat with Levo about scientific concepts and experiments."
-        activities={[
-          { name: "AI Tutor", action: toggleAITutor },
-          { name: "Particle Game", action: toggleParticleGame },
-          { name: "Chemistry Lab Simulator", action: toggleChemistryLabSim },
-          { name: "Physics Puzzle", action: togglePhysicsPuzzle },
-          { name: "Numbers Game", action: toggleNumbersGame },
-        ]}
+        activities={activities.map(activity => ({ name: activity.name, action: () => setCurrentActivity(activity.key) }))}
         progressTitle="Scientific Achievements"
         onSendMessage={sendMessage}
         onStartRecording={startRecording}
@@ -208,44 +268,38 @@ export default function LevoPage() {
         recordMode={recordMode}
       >
         {chatMessages.map((message, index) => (
-          message.type === 'assistant' ? (
-            <div key={index} className="chat-message">
-              <div className="flex items-end">
-                <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 order-2 items-start">
-                  <div>
-                    <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600">
-                      {message.value}
-                    </span>
-                  </div>
+          <div key={index} className={`chat-message ${message.type === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
+            <div className={`flex items-end ${message.type === 'assistant' ? '' : 'flex-row-reverse'}`}>
+              <Image
+                src={message.type === 'assistant' ? "/animals/levo.png" : "/animals/mina.png"}
+                alt={message.type === 'assistant' ? "Levo" : "User"}
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.type === 'assistant' ? 'items-start' : 'items-end'}`}>
+                <div>
+                  <span className={`px-4 py-2 rounded-lg inline-block ${
+                    message.type === 'assistant' ? 'rounded-bl-none bg-gray-300 text-gray-600' : 'rounded-br-none bg-blue-600 text-white'
+                  }`}>
+                    {message.value}
+                  </span>
                 </div>
-                <Image
-                  src="/animals/levo.png"
-                  alt="Levo"
-                  width={24}
-                  height={24}
-                  className="rounded-full order-1"
-                />
               </div>
             </div>
-          ) : (
-            <div key={index} className="chat-message">
-              <div className="flex items-end justify-end">
-                <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 order-1 items-end">
-                  <div>
-                    <span className="px-4 py-2 rounded-lg inline-block rounded-br-none bg-blue-600 text-white">
-                      {message.value}
-                    </span>
-                  </div>
-                </div>
-                <Image src="/animals/mina.png" alt="My profile" width={24} height={24} className="rounded-full order-2" />
-              </div>
-            </div>
-          )
+          </div>
         ))}
         {isLoading && (
-          <div className="chat-message">
+          <div className="chat-message flex justify-start">
             <div className="flex items-end">
-              <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 order-2 items-start">
+              <Image
+                src="/animals/levo.png"
+                alt="Levo"
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 items-start">
                 <div>
                   <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600 relative">
                     Typing...
@@ -253,124 +307,19 @@ export default function LevoPage() {
                   </span>
                 </div>
               </div>
-              <Image
-                src="/animals/levo.png"
-                alt="Levo"
-                width={24}
-                height={24}
-                className="rounded-full order-1"
-              />
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </CharacterBase>
       
-      {showAITutor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-            <h2 className="text-2xl font-bold mb-4">AI Tutor</h2>
-            <div className="flex flex-col h-[calc(100%-8rem)]">
-              <div className="flex-1 overflow-y-auto mb-4">
-                {AITutorMessages.map((message, index) => (
-                  <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
-                    <div className={`flex items-end ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <Image
-                        src={message.role === 'user' ? "/animals/mina.png" : "/animals/levo.png"}
-                        alt={message.role === 'user' ? "User" : "AI"}
-                        width={24}
-                        height={24}
-                        className="rounded-full"
-                      />
-                      <div className={`max-w-xs mx-2 p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                        {message.content}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {isAITutorLoading && (
-                  <div className="flex justify-start mb-4">
-                    <div className="flex items-center bg-gray-200 rounded-lg px-4 py-2">
-                      <span className="animate-pulse">AI is thinking...</span>
-                    </div>
-                  </div>
-                )}
-                <div ref={AITutorMessagesEndRef} />
-              </div>
-              <div className="flex items-center">
-                <Input 
-                  value={AITutorInput} 
-                  onChange={(e) => setAITutorInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendAITutorMessage()}
-                  placeholder="Ask AI Tutor a question..."
-                  className="flex-grow mr-2"
-                />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button onClick={sendAITutorMessage} disabled={isAITutorLoading}>
-                        {isAITutorLoading ? "Sending..." : "Send"}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Send your question to the AI Tutor</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-            <div className="mt-4 flex justify-between">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={handleAITutorClearHistory} variant="outline">
-                      Clear History
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Clear the current AI Tutor conversation history</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Button onClick={toggleAITutor}>Close AI Tutor</Button>
-            </div>
-          </Card>
-        </div>
-      )}
-      
-      {showParticleGame && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-            <h2 className="text-2xl font-bold mb-4">Particle Game</h2>
-            <ParticleGame />
-            <Button className="mt-4" onClick={toggleParticleGame}>Close Game</Button>
-          </Card>
-        </div>
-      )}
-      {showChemistryLabSim && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-            <h2 className="text-2xl font-bold mb-4">Chemistry Lab Simulator</h2>
-            <ChemistryLabSim />
-            <Button className="mt-4" onClick={toggleChemistryLabSim}>Close Simulator</Button>
-          </Card>
-        </div>
-      )}
-      {showPhysicsPuzzle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-            <h2 className="text-2xl font-bold mb-4">Physics Puzzle</h2>
-            <PhysicsPuzzle />
-            <Button className="mt-4" onClick={togglePhysicsPuzzle}>Close Puzzle</Button>
-          </Card>
-        </div>
-      )}
-      {showNumbersGame && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 bg-white w-5/6 h-5/6 overflow-hidden">
-            <h2 className="text-2xl font-bold mb-4">Numbers Game</h2>
-            <div className="h-[calc(100%-4rem)]">
-              <NumbersGame />
-            </div>
-            <Button className="mt-4" onClick={toggleNumbersGame}>Close Game</Button>
-          </Card>
-        </div>
+      {currentActivity && (
+        <ActivityLayout
+          title={activities.find(a => a.key === currentActivity)?.name || ''}
+          onClose={() => setCurrentActivity(null)}
+        >
+          {renderActivity()}
+        </ActivityLayout>
       )}
     </div>
   );

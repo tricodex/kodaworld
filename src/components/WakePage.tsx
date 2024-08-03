@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import ActivityLayout from '@/components/ActivityLayout';
 import CharacterBase from './CharacterBase';
 import Image from 'next/image';
 import MusicVisualizer from './WakeAct/MusicVisualizer';
-import RhythmGame from './WakeAct/RhythmGame'; // Import RhythmGame component
-import ComposeMelody from './WakeAct/ComposeMelody'; // Import the new component
-import InstrumentQuiz from './WakeAct/InstrumentQuiz'; // Import the new component
+import RhythmGame from './WakeAct/RhythmGame';
+import ComposeMelody from './WakeAct/ComposeMelody';
+import InstrumentQuiz from './WakeAct/InstrumentQuiz';
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 
 interface ChatMessage {
   type: 'user' | 'assistant';
@@ -27,10 +27,7 @@ export default function WakePage() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
-  const [showMusicVisualizer, setShowMusicVisualizer] = useState(false);
-  const [showRhythmGame, setShowRhythmGame] = useState(false); // State for RhythmGame
-  const [showComposeMelody, setShowComposeMelody] = useState(false);
-  const [showInstrumentQuiz, setShowInstrumentQuiz] = useState(false);
+  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -103,20 +100,30 @@ export default function WakePage() {
     }
   };
 
-  const toggleMusicVisualizer = () => {
-    setShowMusicVisualizer(!showMusicVisualizer);
+  const toggleActivity = (activity: string | null) => {
+    setCurrentActivity(activity);
   };
 
-  const toggleRhythmGame = () => {
-    setShowRhythmGame(!showRhythmGame);
-  };
+  const activities = [
+    { name: "Rhythm Game", key: "RhythmGame" },
+    { name: "Compose a Melody", key: "ComposeMelody" },
+    { name: "Instrument Quiz", key: "InstrumentQuiz" },
+    { name: "Music Visualizer", key: "MusicVisualizer" }
+  ];
 
-  const toggleComposeMelody = () => {
-    setShowComposeMelody(!showComposeMelody);
-  };
-
-  const toggleInstrumentQuiz = () => {
-    setShowInstrumentQuiz(!showInstrumentQuiz);
+  const renderActivity = () => {
+    switch (currentActivity) {
+      case "RhythmGame":
+        return <RhythmGame />;
+      case "ComposeMelody":
+        return <ComposeMelody />;
+      case "InstrumentQuiz":
+        return <InstrumentQuiz />;
+      case "MusicVisualizer":
+        return <MusicVisualizer />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -126,12 +133,7 @@ export default function WakePage() {
         characterName="Wake"
         subject="Music"
         chatDescription="Chat with Wake about music theory, instruments, and composition."
-        activities={[
-          { name: "Rhythm Game", action: toggleRhythmGame },
-          { name: "Compose a Melody", action: toggleComposeMelody },
-          { name: "Instrument Quiz", action: toggleInstrumentQuiz },
-          { name: "Music Visualizer", action: toggleMusicVisualizer }
-        ]}
+        activities={activities.map(activity => ({ name: activity.name, action: () => toggleActivity(activity.key) }))}
         progressTitle="Your Musical Journey"
         onSendMessage={sendMessage}
         onStartRecording={startRecording}
@@ -163,45 +165,15 @@ export default function WakePage() {
         ))}
         <div ref={messagesEndRef} />
       </CharacterBase>
-      {showMusicVisualizer && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-      <h2 className="text-2xl font-bold mb-4">Music Visualizer</h2>
-      <MusicVisualizer />
-      <Button className="mt-4" onClick={toggleMusicVisualizer}>Close</Button>
-    </Card>
-  </div>
-)}
 
-{showRhythmGame && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-      <h2 className="text-2xl font-bold mb-4">Rhythm Game</h2>
-      <RhythmGame />
-      <Button className="mt-4" onClick={toggleRhythmGame}>Close</Button>
-    </Card>
-  </div>
-)}
-
-{showComposeMelody && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-      <h2 className="text-2xl font-bold mb-4">Compose Melody</h2>
-      <ComposeMelody />
-      <Button className="mt-4" onClick={toggleComposeMelody}>Close</Button>
-    </Card>
-  </div>
-)}
-
-{showInstrumentQuiz && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
-      <h2 className="text-2xl font-bold mb-4">Instrument Quiz</h2>
-      <InstrumentQuiz />
-      <Button className="mt-4" onClick={toggleInstrumentQuiz}>Close</Button>
-    </Card>
-  </div>
-)}
+      {currentActivity && (
+        <ActivityLayout
+          title={activities.find(a => a.key === currentActivity)?.name || ''}
+          onClose={() => toggleActivity(null)}
+        >
+          {renderActivity()}
+        </ActivityLayout>
+      )}
     </div>
   );
 }
