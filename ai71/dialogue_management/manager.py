@@ -1,7 +1,7 @@
 # ai71/dialogue_management/manager.py
 
-from ..ai71_api import AI71API
-from typing import List, Dict, Optional
+from ai71_api import AI71API
+from typing import List, Dict, Optional, Any, Union
 import logging
 import json
 from datetime import datetime
@@ -9,6 +9,7 @@ import asyncio
 import aiohttp
 from dataclasses import dataclass, asdict
 import hashlib
+from langchain.schema import HumanMessage, SystemMessage, AIMessage
 
 @dataclass
 class StudentProfile:
@@ -19,7 +20,7 @@ class StudentProfile:
     feedback_history: List[Dict[str, str]]
 
 class DialogueManager:
-    def __init__(self, db_connection: Optional[object] = None):
+    def __init__(self, db_connection: Optional[Any] = None):
         self.ai_api = AI71API()
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -27,8 +28,8 @@ class DialogueManager:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-        self.db = db_connection  # This would be your database connection
-        self.cache = {}  # Simple in-memory cache
+        self.db = db_connection  # Ensure db_connection has methods get_profile and update_profile
+        self.cache: Dict[str, str] = {}  # Simple in-memory cache with type annotation
 
     async def process_user_input(self, user_input: str, student_id: str) -> str:
         try:
@@ -47,16 +48,19 @@ class DialogueManager:
             context = f"Student ID: {profile.student_id}, Learning Style: {profile.learning_style}, Progress: {json.dumps(profile.progress)}"
             
             # Generate response
-            response = await self.ai_api.generate_with_memory(f"{context}\n\nUser: {user_input}")
+            response = await self.ai_api.chat_completion([
+                {"role": "system", "content": "You are an AI tutor."},
+                {"role": "user", "content": f"{context}\n\nUser: {user_input}"}
+            ])
             
             # Update cache
-            self.cache[cache_key] = response
+            self.cache[cache_key] = response['choices'][0]['message']['content']
             
             # Update student profile
             await self.update_student_profile(student_id, {"last_interaction": datetime.now().isoformat()})
             
             self.logger.info(f"Generated response for student {student_id}")
-            return response
+            return response['choices'][0]['message']['content']
         except aiohttp.ClientError as e:
             self.logger.error(f"Network error processing input for student {student_id}: {str(e)}")
             return "I'm having trouble connecting to my knowledge base. Please try again in a moment."
@@ -97,8 +101,6 @@ class DialogueManager:
 
     async def get_student_profile(self, student_id: str) -> StudentProfile:
         try:
-            # In a real implementation, this would fetch from a database
-            # For now, we'll create a dummy profile if it doesn't exist
             if self.db:
                 profile_data = await self.db.get_profile(student_id)
             else:
@@ -119,14 +121,13 @@ class DialogueManager:
             self.logger.info(f"Updating profile for student {student_id}: {update}")
             if self.db:
                 await self.db.update_profile(student_id, update)
-            # If no db, we would update the in-memory profile here
         except Exception as e:
             self.logger.error(f"Error updating profile for student {student_id}: {str(e)}")
+            
 
-    async def analyze_learning_progress(self, student_id: str) -> Dict:
+    async def analyze_learning_progress(self, student_id: str) -> Dict[str, Union[float, List[str]]]:
         try:
             profile = await self.get_student_profile(student_id)
-            # This would be a more complex analysis in a real implementation
             progress_summary = {
                 "average_progress": sum(profile.progress.values()) / len(profile.progress) if profile.progress else 0,
                 "strengths": [k for k, v in profile.progress.items() if v > 0.7],

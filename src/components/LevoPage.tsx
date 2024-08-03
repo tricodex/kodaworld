@@ -6,9 +6,11 @@ import ParticleGame from './LevoAct/ParticleGame';
 import ChemistryLabSim from './LevoAct/ChemistryLabSim';
 import PhysicsPuzzle from './LevoAct/PhysicsPuzzle';
 import NumbersGame from './LevoAct/NumbersGame';
+import AiTutor from './AiTutor';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Image from 'next/image';
+import { useToast } from "@/components/ui/use-toast";
 
 interface ChatMessage {
   type: 'user' | 'assistant';
@@ -27,18 +29,19 @@ export default function LevoPage() {
   const [showChemistryLabSim, setShowChemistryLabSim] = useState(false);
   const [showPhysicsPuzzle, setShowPhysicsPuzzle] = useState(false);
   const [showNumbersGame, setShowNumbersGame] = useState(false);
+  const [showAiTutor, setShowAiTutor] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  const toggleParticleGame = () => {
-    setShowParticleGame(!showParticleGame);
-  };
+  const toggleParticleGame = () => setShowParticleGame(!showParticleGame);
   const toggleChemistryLabSim = () => setShowChemistryLabSim(!showChemistryLabSim);
   const togglePhysicsPuzzle = () => setShowPhysicsPuzzle(!showPhysicsPuzzle);
   const toggleNumbersGame = () => setShowNumbersGame(!showNumbersGame);
+  const toggleAiTutor = () => setShowAiTutor(!showAiTutor);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,6 +78,11 @@ export default function LevoPage() {
     } catch (error) {
       console.error('Error sending message:', error);
       setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +90,11 @@ export default function LevoPage() {
 
   const startRecording = () => {
     if (!('webkitSpeechRecognition' in window)) {
-      alert('Your browser does not support speech recognition. Please use Google Chrome.');
+      toast({
+        title: "Speech Recognition Unavailable",
+        description: "Your browser does not support speech recognition. Please use Google Chrome.",
+        variant: "destructive",
+      });
     } else {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
@@ -106,6 +118,11 @@ export default function LevoPage() {
 
       recognition.onerror = function (event: any) {
         console.error(event);
+        toast({
+          title: "Speech Recognition Error",
+          description: "An error occurred during speech recognition. Please try again.",
+          variant: "destructive",
+        });
       };
     }
   };
@@ -118,6 +135,7 @@ export default function LevoPage() {
         subject="Science"
         chatDescription="Chat with Levo about scientific concepts and experiments."
         activities={[
+          { name: "AI Tutor", action: toggleAiTutor },
           { name: "Particle Game", action: toggleParticleGame },
           { name: "Chemistry Lab Simulator", action: toggleChemistryLabSim },
           { name: "Physics Puzzle", action: togglePhysicsPuzzle },
@@ -189,6 +207,16 @@ export default function LevoPage() {
         <div ref={messagesEndRef} />
       </CharacterBase>
       
+      {showAiTutor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
+            <h2 className="text-2xl font-bold mb-4">AI Tutor</h2>
+            <AiTutor studentId="levo-student" />
+            <Button className="mt-4" onClick={toggleAiTutor}>Close AI Tutor</Button>
+          </Card>
+        </div>
+      )}
+      
       {showParticleGame && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="p-6 bg-white w-5/6 h-5/6 overflow-auto">
@@ -205,7 +233,7 @@ export default function LevoPage() {
             <ChemistryLabSim />
             <Button className="mt-4" onClick={toggleChemistryLabSim}>Close Simulator</Button>
           </Card>
-          </div>
+        </div>
       )}
       {showPhysicsPuzzle && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

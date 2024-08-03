@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button"
-import { Bell, Settings, LogIn } from 'lucide-react';
+import { Bell, Settings, LogIn, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -25,6 +25,12 @@ const KodaHeader: React.FC = () => {
           </Link>
           <Link href="/koda-survival" passHref>
             <Button variant="ghost" className="text-black hover:bg-black/20">Koda Survival</Button>
+          </Link>
+          <Link href="/curriculum-optimizer" passHref>
+            <Button variant="ghost" className="text-black hover:bg-black/20">
+              <BookOpen className="h-5 w-5 mr-2" />
+              Curriculum Optimizer
+            </Button>
           </Link>
           <Button variant="ghost" size="icon" aria-label="Notifications" className="text-black hover:bg-black/20"><Bell className="h-5 w-5" /></Button>
           <Button variant="ghost" size="icon" aria-label="Settings" className="text-black hover:bg-black/20"><Settings className="h-5 w-5" /></Button>
