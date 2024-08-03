@@ -1,14 +1,17 @@
 # main.py
-from fastapi import FastAPI, HTTPException, Depends
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
-from dialogue_management.manager import DialogueManager
-from curriculum_optimization.optimizer import CurriculumOptimizer
-from gamification.system import GamificationSystem
-from peer_matching.matcher import PeerMatcher
-from scientific_simulation.simulator import ScientificSimulator
-from ai71_api import AI71API
+from .dialogue_management.manager import DialogueManager
+from .curriculum_optimization.optimizer import CurriculumOptimizer
+from .gamification.system import GamificationSystem
+from .peer_matching.matcher import PeerMatcher
+from .scientific_simulation.simulator import ScientificSimulator
+from .ai71_api import AI71API
 import os
 
 app = FastAPI(title="KodaWorld API", description="Backend API for KodaWorld educational platform")
