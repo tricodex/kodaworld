@@ -39,14 +39,23 @@ class AI71API:
                     raise
                 time.sleep(2 ** attempt)  # Exponential backoff
 
-    def chat_completion(self, messages: List[Dict[str, str]], model: str = "tiiuae/falcon-180B-chat", **kwargs) -> Dict[str, Any]:
-        payload = {"model": model, "messages": messages, **kwargs}
+    def chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-180b", **kwargs) -> Dict[str, Any]:
+        payload = {
+            "model": model,
+            "messages": messages,
+            **kwargs
+        }
         response = self._make_request("chat/completions", payload)
         self._update_memory(messages, response['choices'][0]['message']['content'])
         return response
 
-    def stream_chat_completion(self, messages: List[Dict[str, str]], model: str = "tiiuae/falcon-180B-chat", **kwargs) -> Generator[Dict[str, Any], None, None]:
-        payload = {"model": model, "messages": messages, "stream": True, **kwargs}
+    def stream_chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-180b", **kwargs) -> Generator[Dict[str, Any], None, None]:
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+            **kwargs
+        }
         response = self._make_request("chat/completions", payload, stream=True)
         full_response = ""
         for line in response.iter_lines():
@@ -70,7 +79,7 @@ class AI71API:
     def clear_memory(self):
         self.memory.clear()
 
-    def generate_with_memory(self, user_input: str, model: str = "tiiuae/falcon-180B-chat", **kwargs) -> str:
+    def generate_with_memory(self, user_input: str, model: str = "falcon-180b", **kwargs) -> str:
         messages = self.get_conversation_history()
         messages.append(HumanMessage(content=user_input))
         response = self.chat_completion([{"role": m.type, "content": m.content} for m in messages], model=model, **kwargs)

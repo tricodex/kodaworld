@@ -1,15 +1,26 @@
-# ai71/dialogue_management/manager.py
-
-from ai71_api import AI71API
-from typing import List, Dict, Optional, Any, Union
-import logging
-import json
-from datetime import datetime
+# ai71/dialogue_management/advanced_manager.py
 import asyncio
-import aiohttp
+import json
+import logging
+from typing import List, Dict, Optional, Any, Union
+from datetime import datetime
 from dataclasses import dataclass, asdict
-import hashlib
-from langchain.schema import HumanMessage, SystemMessage, AIMessage
+
+from langchain.schema import Document
+from langchain.vectorstores import Chroma
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
+from langchain.llms import OpenAI
+from langchain.retrievers import MultiQueryRetriever, SelfQueryRetriever, ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+from langchain.chains import GraphCypherQAChain
+from langchain.graphs import Neo4jGraph
+from langchain.chains import SQLDatabaseChain
+from langchain.sql_database import SQLDatabase
+from ..ai71_api import AI71API
 
 @dataclass
 class StudentProfile:
@@ -19,70 +30,164 @@ class StudentProfile:
     last_interaction: datetime
     feedback_history: List[Dict[str, str]]
 
-class DialogueManager:
+class AdvancedDialogueManager:
     def __init__(self, db_connection: Optional[Any] = None):
         self.ai_api = AI71API()
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
+        self.logger = self._setup_logger()
+        self.db = db_connection
+        self.cache: Dict[str, str] = {}
+        
+        # Initialize RAG components
+        self.embeddings = OpenAIEmbeddings()
+        self.vectorstore = self._initialize_vectorstore()
+        self.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+        self.llm = OpenAI(temperature=0)
+        self.qa_chain = self._setup_qa_chain()
+        
+        # Additional components for advanced RAG
+        self.multi_query_retriever = self._setup_multi_query_retriever()
+        self.self_query_retriever = self._setup_self_query_retriever()
+        self.contextual_compression_retriever = self._setup_contextual_compression_retriever()
+        self.graph_qa_chain = self._setup_graph_qa_chain()
+        self.sql_chain = self._setup_sql_chain()
+
+    def _setup_logger(self):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.db = db_connection  # Ensure db_connection has methods get_profile and update_profile
-        self.cache: Dict[str, str] = {}  # Simple in-memory cache with type annotation
+        logger.addHandler(handler)
+        return logger
 
-    async def process_user_input(self, user_input: str, student_id: str) -> str:
-        try:
-            self.logger.info(f"Processing input for student {student_id}: {user_input}")
-            
-            # Check cache first
-            cache_key = hashlib.md5(f"{student_id}:{user_input}".encode()).hexdigest()
-            if cache_key in self.cache:
-                self.logger.info(f"Cache hit for student {student_id}")
-                return self.cache[cache_key]
+    def _initialize_vectorstore(self):
+        texts = self._load_educational_content()
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        documents = text_splitter.split_documents(texts)
+        return Chroma.from_documents(documents, self.embeddings)
 
-            # Get student profile
-            profile = await self.get_student_profile(student_id)
-            
-            # Prepare context with student profile
-            context = f"Student ID: {profile.student_id}, Learning Style: {profile.learning_style}, Progress: {json.dumps(profile.progress)}"
-            
-            # Generate response
-            response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI tutor."},
-                {"role": "user", "content": f"{context}\n\nUser: {user_input}"}
-            ])
-            
-            # Update cache
-            self.cache[cache_key] = response['choices'][0]['message']['content']
-            
-            # Update student profile
-            await self.update_student_profile(student_id, {"last_interaction": datetime.now().isoformat()})
-            
-            self.logger.info(f"Generated response for student {student_id}")
-            return response['choices'][0]['message']['content']
-        except aiohttp.ClientError as e:
-            self.logger.error(f"Network error processing input for student {student_id}: {str(e)}")
-            return "I'm having trouble connecting to my knowledge base. Please try again in a moment."
-        except json.JSONDecodeError as e:
-            self.logger.error(f"JSON parsing error for student {student_id}: {str(e)}")
-            return "I'm having trouble understanding the information. Let's try a different approach."
-        except Exception as e:
-            self.logger.error(f"Unexpected error processing input for student {student_id}: {str(e)}")
-            return "I'm sorry, I'm having trouble processing your request right now. Please try again later."
+    def _load_educational_content(self) -> List[Document]:
+        # Placeholder method to load educational content
+        return [
+            Document(page_content="KodaWorld is an AI-powered educational platform...", metadata={"source": "intro"}),
+            Document(page_content="The water cycle, also known as the hydrologic cycle...", metadata={"source": "science"}),
+            # Add more educational content as needed
+        ]
+
+    def _setup_qa_chain(self):
+        prompt_template = """
+        You are an AI tutor in the KodaWorld educational platform. Use the following pieces of context to answer the student's question. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+        {context}
+
+        Student: {question}
+        AI Tutor: """
+        PROMPT = PromptTemplate(
+            template=prompt_template, input_variables=["context", "question"]
+        )
+
+        return ConversationalRetrievalChain.from_llm(
+            llm=self.llm,
+            retriever=self.vectorstore.as_retriever(),
+            memory=self.memory,
+            combine_docs_chain_kwargs={"prompt": PROMPT}
+        )
+
+    def _setup_multi_query_retriever(self):
+        return MultiQueryRetriever.from_llm(
+            retriever=self.vectorstore.as_retriever(),
+            llm=self.llm
+        )
+
+    def _setup_self_query_retriever(self):
+        return SelfQueryRetriever.from_llm(
+            self.llm,
+            self.vectorstore,
+            "Educational content for KodaWorld",
+            self.vectorstore.metadata_config
+        )
+
+    def _setup_contextual_compression_retriever(self):
+        base_compressor = LLMChainExtractor.from_llm(self.llm)
+        return ContextualCompressionRetriever(
+            base_compressor=base_compressor,
+            base_retriever=self.vectorstore.as_retriever()
+        )
+
+    def _setup_graph_qa_chain(self):
+        # Placeholder: Replace with actual Neo4j connection details
+        graph = Neo4jGraph(
+            url="bolt://localhost:7687", 
+            username="neo4j", 
+            password="password"
+        )
+        return GraphCypherQAChain.from_llm(
+            cypher_llm=self.llm,
+            qa_llm=self.llm,
+            graph=graph,
+            verbose=True
+        )
+
+    def _setup_sql_chain(self):
+        # Placeholder: Replace with actual SQL database connection details
+        db = SQLDatabase.from_uri("sqlite:///example.db")
+        return SQLDatabaseChain.from_llm(self.llm, db, verbose=True)
+
+    async def _translate_query(self, query: str) -> str:
+        # Implement query translation (e.g., multi-query, decomposition, step-back, HyDE)
+        translation_prompt = f"Translate this question into a form better suited for retrieval: {query}"
+        translation_response = await self.ai_api.chat_completion([
+            {"role": "system", "content": "You are an expert in query translation for educational contexts."},
+            {"role": "user", "content": translation_prompt}
+        ])
+        return translation_response['choices'][0]['message']['content']
+
+    async def _route_query(self, query: str):
+        # Implement query routing logic
+        if "graph" in query.lower():
+            return self.graph_qa_chain
+        elif "database" in query.lower():
+            return self.sql_chain
+        elif "specific" in query.lower():
+            return self.self_query_retriever
+        else:
+            return self.multi_query_retriever
+
+    async def _retrieve_documents(self, retriever, query: str) -> List[Document]:
+        if isinstance(retriever, (GraphCypherQAChain, SQLDatabaseChain)):
+            # For graph and SQL queries, we don't retrieve documents in the same way
+            return []
+        return await asyncio.to_thread(retriever.get_relevant_documents, query)
+
+    async def _rerank_documents(self, docs: List[Document], query: str) -> List[Document]:
+        if not docs:
+            return []
+        return await asyncio.to_thread(self.reranker.rerank_documents, docs, query)
+
+    async def _generate_response(self, docs: List[Document], query: str, context: str) -> str:
+        if isinstance(self.qa_chain.retriever, (GraphCypherQAChain, SQLDatabaseChain)):
+            # For graph and SQL queries, use the specialized chains
+            response = await asyncio.to_thread(self.qa_chain, query)
+            return response['result']
+        else:
+            response = await asyncio.to_thread(
+                self.qa_chain,
+                {"question": f"{context}\n\nStudent: {query}", "chat_history": self.memory.chat_memory.messages}
+            )
+            return response['answer']
 
     async def get_conversation_history(self, student_id: str) -> List[Dict[str, str]]:
         try:
-            history = [{"role": m.type, "content": m.content} for m in self.ai_api.get_conversation_history()]
+            history = self.memory.chat_memory.messages
             self.logger.info(f"Retrieved conversation history for student {student_id}")
-            return history
+            return [{"role": m.type, "content": m.content} for m in history]
         except Exception as e:
             self.logger.error(f"Error retrieving conversation history for student {student_id}: {str(e)}")
             return []
 
     async def clear_history(self, student_id: str):
         try:
-            self.ai_api.clear_memory()
+            self.memory.clear()
             self.logger.info(f"Cleared conversation history for student {student_id}")
         except Exception as e:
             self.logger.error(f"Error clearing conversation history for student {student_id}: {str(e)}")
@@ -123,7 +228,6 @@ class DialogueManager:
                 await self.db.update_profile(student_id, update)
         except Exception as e:
             self.logger.error(f"Error updating profile for student {student_id}: {str(e)}")
-            
 
     async def analyze_learning_progress(self, student_id: str) -> Dict[str, Union[float, List[str]]]:
         try:
@@ -172,9 +276,115 @@ class DialogueManager:
         await self.collect_feedback(student_id, f"Error occurred: {error_message}")
         return "I apologize, but I'm experiencing some technical difficulties. Please try again later or contact support if the problem persists."
 
+    async def update_knowledge_base(self, new_content: List[Document]):
+        try:
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            documents = text_splitter.split_documents(new_content)
+            self.vectorstore.add_documents(documents)
+            self.logger.info(f"Updated knowledge base with {len(documents)} new documents")
+            
+            # Update other retrieval components
+            await self._update_retrievers()
+        except Exception as e:
+            self.logger.error(f"Error updating knowledge base: {str(e)}")
+
+    async def _update_retrievers(self):
+        # Update multi-query retriever
+        self.multi_query_retriever = self._setup_multi_query_retriever()
+        
+        # Update self-query retriever
+        self.self_query_retriever = self._setup_self_query_retriever()
+        
+        # Update contextual compression retriever
+        self.contextual_compression_retriever = self._setup_contextual_compression_retriever()
+
+    async def self_correct_response(self, query: str, initial_response: str) -> str:
+        correction_prompt = f"""
+        Given the following query and initial response, check for any inaccuracies or hallucinations.
+        If found, provide a corrected response. If no corrections are needed, return the original response.
+
+        Query: {query}
+        Initial Response: {initial_response}
+
+        Corrected Response:
+        """
+        
+        correction_response = await self.ai_api.chat_completion([
+            {"role": "system", "content": "You are an AI assistant tasked with correcting potential inaccuracies in educational responses."},
+            {"role": "user", "content": correction_prompt}
+        ])
+        
+        return correction_response['choices'][0]['message']['content']
+
+    async def active_learning(self, query: str, response: str, student_id: str):
+        # Simulate active learning by identifying areas where the model is uncertain
+        uncertainty_prompt = f"""
+        Analyze the following query and response. Identify any areas where the response shows uncertainty
+        or could benefit from additional information. Return these areas as a JSON list of strings.
+
+        Query: {query}
+        Response: {response}
+        """
+        
+        uncertainty_analysis = await self.ai_api.chat_completion([
+            {"role": "system", "content": "You are an AI assistant tasked with identifying areas of uncertainty in educational responses."},
+            {"role": "user", "content": uncertainty_prompt}
+        ])
+        
+        uncertain_areas = json.loads(uncertainty_analysis['choices'][0]['message']['content'])
+        
+        if uncertain_areas:
+            # Log areas of uncertainty for future improvement of the knowledge base
+            self.logger.info(f"Identified areas of uncertainty for query from student {student_id}: {uncertain_areas}")
+            
+            # You could potentially trigger a process here to research and add new information
+            # to the knowledge base based on these uncertain areas
+            await self._research_and_update(uncertain_areas)
+
+    async def _research_and_update(self, topics: List[str]):
+        # Placeholder for a method that would research uncertain topics and update the knowledge base
+        # In a real implementation, this might involve web scraping, API calls to educational databases, etc.
+        self.logger.info(f"Researching topics for knowledge base improvement: {topics}")
+        # Simulated new documents based on research
+        new_docs = [Document(page_content=f"New information about {topic}...") for topic in topics]
+        await self.update_knowledge_base(new_docs)
+
+    async def process_user_input(self, user_input: str, student_id: str) -> str:
+        try:
+            self.logger.info(f"Processing input for student {student_id}: {user_input}")
+            
+            cache_key = hash(f"{student_id}:{user_input}")
+            if cache_key in self.cache:
+                self.logger.info(f"Cache hit for student {student_id}")
+                return self.cache[cache_key]
+
+            profile = await self.get_student_profile(student_id)
+            context = f"Student ID: {profile.student_id}, Learning Style: {profile.learning_style}, Progress: {json.dumps(profile.progress)}"
+            
+            translated_query = await self._translate_query(user_input)
+            retriever = await self._route_query(translated_query)
+            docs = await self._retrieve_documents(retriever, translated_query)
+            reranked_docs = await self._rerank_documents(docs, translated_query)
+            initial_response = await self._generate_response(reranked_docs, translated_query, context)
+            
+            # Apply self-correction
+            corrected_response = await self.self_correct_response(user_input, initial_response)
+            
+            # Apply active learning
+            await self.active_learning(user_input, corrected_response, student_id)
+            
+            self.cache[cache_key] = corrected_response
+            await self.update_student_profile(student_id, {"last_interaction": datetime.now().isoformat()})
+            
+            self.logger.info(f"Generated response for student {student_id}")
+            return corrected_response
+        except Exception as e:
+            self.logger.error(f"Error processing input for student {student_id}: {str(e)}")
+            return await self.handle_error(student_id, str(e))
+
 # Usage example:
 async def main():
-    manager = DialogueManager()
+    manager = AdvancedDialogueManager()
     student_id = "12345"
     
     response = await manager.process_user_input("Can you explain photosynthesis?", student_id)
@@ -190,6 +400,12 @@ async def main():
     
     recommendations = await manager.recommend_next_steps(student_id)
     print(f"Recommendations: {recommendations}")
+
+    # Update knowledge base example
+    new_content = [
+        Document(page_content="Photosynthesis is the process by which plants use sunlight, water and carbon dioxide to produce oxygen and energy in the form of sugar.", metadata={"source": "biology"}),
+    ]
+    await manager.update_knowledge_base(new_content)
 
 if __name__ == "__main__":
     asyncio.run(main())
