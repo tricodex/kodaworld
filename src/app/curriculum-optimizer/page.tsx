@@ -19,7 +19,7 @@ export default function CurriculumOptimizer() {
   const { addToast } = useToast();
 
   const handleOptimize = async () => {
-    if (!currentCurriculum || !performanceData || !learningGoals) {
+    if (!currentCurriculum || !performanceData || !learningGoals) {  
       addToast({
         title: "Error",
         description: "Please fill in all fields before optimizing.",

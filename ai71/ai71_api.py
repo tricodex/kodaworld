@@ -1,5 +1,3 @@
-# ai71/ai71_api.py
-
 import os
 import requests
 import logging
@@ -79,8 +77,22 @@ class AI71API:
     def clear_memory(self):
         self.memory.clear()
 
-    def generate_with_memory(self, user_input: str, model: str = "falcon-180b", **kwargs) -> str:
-        messages = self.get_conversation_history()
-        messages.append(HumanMessage(content=user_input))
-        response = self.chat_completion([{"role": m.type, "content": m.content} for m in messages], model=model, **kwargs)
+    def generate_with_memory(self, user_input: str, model: str = "falcon-180b", messages: List[Dict[str, str]] = None, **kwargs) -> str:
+        if messages is None:
+            messages = self.get_conversation_history()
+            messages.append(HumanMessage(content=user_input))
+            messages = [{"role": m.type, "content": m.content} for m in messages]
+        else:
+            messages.append({"role": "user", "content": user_input})
+        
+        response = self.chat_completion(messages, model=model, **kwargs)
         return response['choices'][0]['message']['content']
+
+    def add_system_message(self, content: str):
+        self.memory.chat_memory.add_message(SystemMessage(content=content))
+
+    def add_user_message(self, content: str):
+        self.memory.chat_memory.add_user_message(content)
+
+    def add_ai_message(self, content: str):
+        self.memory.chat_memory.add_ai_message(content)

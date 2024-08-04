@@ -1,23 +1,28 @@
-# ai71/main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
 from .dialogue_management.manager import DialogueManager
+from .ai71_api import AI71API
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 # CORS middleware setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],  # Allow requests from your Next.js app
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize DialogueManager
+# Initialize DialogueManager and AI71API
 dialogue_manager = DialogueManager()
+ai71_api = AI71API()
 
 # Define Pydantic models for request bodies
 class UserInput(BaseModel):
@@ -28,11 +33,36 @@ class CurriculumOptimizationRequest(BaseModel):
     currentCurriculum: Dict
     performanceData: Dict
     learningGoals: List[str]
+    
+@app.get("/")
+async def root():
+    logger.info("Root endpoint accessed")
+    return {"message": "Welcome to the AI71 API"}
 
 @app.post("/api/ai-tutor")
 async def ai_tutor(request: UserInput):
-    response = await dialogue_manager.process_user_input(request.message, request.studentId)
-    return {"response": response}
+    try:
+        # Get conversation history
+        history = await dialogue_manager.get_conversation_history(request.studentId)
+        
+        # Prepare context for AI
+        context = [
+            {"role": "system", "content": "You are an AI tutor specialized in helping students learn various subjects. Provide detailed and helpful responses."},
+            *[{"role": "user" if msg["role"] == "user" else "assistant", "content": msg["content"]} for msg in history],
+            {"role": "user", "content": request.message}
+        ]
+        
+        # Generate AI response
+        ai_response = ai71_api.generate_with_memory(request.message, model="falcon-180b", messages=context)
+        
+        # Save the interaction
+        await dialogue_manager.process_user_input(request.message, request.studentId)
+        await dialogue_manager.process_ai_response(ai_response, request.studentId)
+        
+        return {"response": ai_response}
+    except Exception as e:
+        logger.error(f"Error in AI tutor: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
 
 @app.get("/api/conversation-history/{student_id}")
 async def get_conversation_history(student_id: str):
@@ -42,6 +72,7 @@ async def get_conversation_history(student_id: str):
 @app.post("/api/clear-history/{student_id}")
 async def clear_conversation_history(student_id: str):
     await dialogue_manager.clear_history(student_id)
+    ai71_api.clear_memory()
     return {"message": "Conversation history cleared successfully"}
 
 @app.post("/api/collect-feedback/{student_id}")

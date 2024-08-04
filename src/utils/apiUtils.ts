@@ -7,7 +7,12 @@ const RETRY_DELAY = 1000; // 1 second
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}, retries = 0): Promise<T> {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
+    console.log('Attempting to fetch from:', url);  // Add this line
+
+    let token;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      token = localStorage.getItem('authToken');
+    }
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -29,8 +34,9 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {},
     return await response.json() as T;
   } catch (error) {
     console.error('API request failed:', error);
-    // Consider moving this toast call to where apiRequest is used
-    // toast.error('An error occurred. Please try again later.');
+    if (typeof window !== 'undefined') {
+      toast.error('An error occurred. Please try again later.');
+    }
     throw error;
   }
 }

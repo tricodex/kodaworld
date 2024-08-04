@@ -1,9 +1,15 @@
-let authToken: string | null = null;
-
 export function setAuthToken(token: string) {
-  authToken = token;
-}
-
-export function getAuthToken() {
-  return authToken;
-}
+    localStorage.setItem('authToken', token);
+  }
+  
+  export function getAuthToken(): string | null {
+    return localStorage.getItem('authToken');
+  }
+  
+  export function removeAuthToken() {
+    localStorage.removeItem('authToken');
+  }
+  
+  export function isAuthenticated(): boolean {
+    return !!getAuthToken();
+  }

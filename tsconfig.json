@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "target": "es5",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -12,7 +13,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "forceConsistentCasingInFileNames": true, // Add this line
+    "forceConsistentCasingInFileNames": true,
+    "types": ["jest", "node"],
     "plugins": [
       {
         "name": "next"
@@ -20,9 +22,10 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@ai71/*": ["../ai71/*"],
-    }
+      "@ai71/*": ["../ai71/*"]
+    },
+    "baseUrl": "."
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "jest.config.js"],
   "exclude": ["node_modules"]
 }

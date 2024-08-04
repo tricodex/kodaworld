@@ -5,6 +5,7 @@ import { Card } from "./ui/card";
 import { useToast } from "./ui/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { optimizeCurriculum } from '@/api/chat';
 
 const CurriculumOptimizer = () => {
   const [currentCurriculum, setCurrentCurriculum] = useState('');
@@ -25,20 +26,12 @@ const CurriculumOptimizer = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/optimize-curriculum', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentCurriculum: JSON.parse(currentCurriculum),
-          performanceData: JSON.parse(performanceData),
-          learningGoals: JSON.parse(learningGoals),
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to optimize curriculum');
-
-      const data = await response.json();
-      setOptimizedCurriculum(JSON.stringify(data.optimizedCurriculum, null, 2));
+      const response = await optimizeCurriculum(
+        JSON.parse(currentCurriculum),
+        JSON.parse(performanceData),
+        JSON.parse(learningGoals)
+      );
+      setOptimizedCurriculum(JSON.stringify(response, null, 2));
       addToast({
         title: "Success",
         description: "Curriculum optimized successfully!",
@@ -67,9 +60,8 @@ const CurriculumOptimizer = () => {
   return (
     <Card className="p-6 max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Curriculum Optimizer</h2>
-      <p className="mb-4">Optimize your curriculum based on current content, performance data, and learning goals.</p>
       <div className="mb-4">
-        <label className="block mb-2">
+        <label className="block mb-2 font-bold">
           Current Curriculum (JSON)
           {renderTooltip("Enter your current curriculum structure as a JSON object.")}
         </label>
@@ -81,7 +73,7 @@ const CurriculumOptimizer = () => {
         />
       </div>
       <div className="mb-4">
-        <label className="block mb-2">
+        <label className="block mb-2 font-bold">
           Performance Data (JSON)
           {renderTooltip("Enter student performance data as a JSON object.")}
         </label>
@@ -93,7 +85,7 @@ const CurriculumOptimizer = () => {
         />
       </div>
       <div className="mb-4">
-        <label className="block mb-2">
+        <label className="block mb-2 font-bold">
           Learning Goals (JSON array)
           {renderTooltip("Enter learning goals as a JSON array of strings.")}
         </label>

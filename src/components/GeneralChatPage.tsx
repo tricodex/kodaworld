@@ -1,4 +1,3 @@
-'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,11 +5,8 @@ import { Card } from "@/components/ui/card"
 import { Search } from 'lucide-react';
 import Image from 'next/image';
 import KodaHeader from './KodaHeader';
-
-interface ChatMessage {
-  type: 'user' | 'assistant';
-  value: string;
-}
+import { sendChatMessage } from '@/api/chat';
+import { ChatMessage } from '@/types/api';
 
 export default function GeneralChatPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -34,23 +30,8 @@ export default function GeneralChatPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          character: 'koda',
-          message: inputMessage
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      const data = await response.json();
-      setChatMessages(prev => [...prev, { type: 'assistant', value: data.response }]);
+      const response = await sendChatMessage('koda', inputMessage);
+      setChatMessages(prev => [...prev, { type: 'assistant', value: response.response }]);
     } catch (error) {
       console.error('Error sending message:', error);
       setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
@@ -108,7 +89,9 @@ export default function GeneralChatPage() {
             <div className="h-96 overflow-y-auto mb-4">
               {chatMessages.map((message, index) => (
                 <div key={index} className={`chat-message ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
-                  <span className={`inline-block p-2 rounded-lg ${message.type === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
+                  <span className={`inline-block p-2 rounded-lg ${
+                    message.type === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                  }`}>
                     {message.value}
                   </span>
                 </div>

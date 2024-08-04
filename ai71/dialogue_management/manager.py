@@ -16,6 +16,13 @@ class DialogueManager:
         handler.setFormatter(formatter)
         logger.addHandler(handler)
         return logger
+    
+    async def process_ai_response(self, response: str, student_id: str):
+        self.conversations.setdefault(student_id, []).append({
+            "role": "assistant",
+            "content": response,
+            "timestamp": datetime.now().isoformat()
+        })
 
     async def get_conversation_history(self, student_id: str) -> List[Dict[str, str]]:
         try:

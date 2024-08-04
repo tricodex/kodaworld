@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { apiRequest } from '@/utils/apiUtils';
 
 interface ChatMessage {
   type: 'user' | 'assistant';
@@ -95,23 +96,19 @@ export default function LevoPage() {
 
   const sendAITutorMessage = async () => {
     if (!AITutorInput.trim()) return;
-
+  
     const newMessage: AITutorMessage = { role: 'user', content: AITutorInput };
     setAITutorMessages(prev => [...prev, newMessage]);
     setAITutorInput('');
     setIsAITutorLoading(true);
-
+  
     try {
-      const response = await fetch('/api/ai-tutor', {
+      const response = await apiRequest<{ response: string }>('/api/ai-tutor', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: AITutorInput, studentId: 'levo-student' }),
       });
-
-      if (!response.ok) throw new Error('Failed to get AI Tutor response');
-
-      const data = await response.json();
-      setAITutorMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      console.log('AI Tutor response:', response);
+      setAITutorMessages(prev => [...prev, { role: 'assistant', content: response.response }]);
     } catch (error) {
       console.error('Error sending message to AI Tutor:', error);
       addToast({
