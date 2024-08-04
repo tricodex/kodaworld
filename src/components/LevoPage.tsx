@@ -191,7 +191,7 @@ export default function LevoPage() {
                 <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
                   <div className={`flex items-end ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                     <Image
-                      src={message.role === 'user' ? "/animals/mina.png" : "/animals/levo.png"}
+                      src={message.role === 'user' ? "/animals/koda_logo128.png" : "/animals/levo.png"}
                       alt={message.role === 'user' ? "User" : "AI"}
                       width={24}
                       height={24}

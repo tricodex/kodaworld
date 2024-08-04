@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import KodaHeader from './KodaHeader';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ChatMessage, ChatResponse } from '@/types/api';
+import { useCharacterRedirection } from './CharacterRedirection';
 
 interface AnimalButtonProps {
   name: string;
@@ -58,14 +60,15 @@ const AnimalButton: React.FC<AnimalButtonProps> = ({ name, subject, bgColor, lig
 
 export default function HomePage() {
   const [query, setQuery] = useState('');
-  const router = useRouter();
+  const { redirectToCharacter, feedback } = useCharacterRedirection();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      router.push(`/general-chat?q=${encodeURIComponent(query)}`);
+      redirectToCharacter(query);
     }
   };
+
 
   return (
     <ErrorBoundary>
@@ -94,19 +97,25 @@ export default function HomePage() {
               <AnimalButton name="Ella" subject="History" bgColor="#DCE9FF" lightBgColor="#f1f7ff" boxShadowColor="rgba(220, 233, 255, 0.48)" />
             </div>
             <Card className="max-w-3xl mx-auto p-6 shadow-lg bg-white bg-opacity-90">
-              <form onSubmit={handleSearch}>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input 
-                    type="text"
-                    placeholder="What do you want to learn today?"
-                    className="pl-10 pr-4 py-3 text-lg rounded-full"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </div>
-              </form>
-            </Card>
+        <form onSubmit={handleSearch}>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input 
+              type="text"
+              placeholder="What do you want to learn today?"
+              className="pl-10 pr-4 py-3 text-lg rounded-full"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <Button type="submit" className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              Search
+            </Button>
+          </div>
+        </form>
+        {feedback && (
+          <p className="mt-2 text-sm text-gray-600">{feedback}</p>
+        )}
+      </Card>
           </main>
         </div>
       </div>

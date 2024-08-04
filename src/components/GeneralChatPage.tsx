@@ -1,12 +1,15 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Search } from 'lucide-react';
 import Image from 'next/image';
 import KodaHeader from './KodaHeader';
 import { sendChatMessage } from '@/api/chat';
 import { ChatMessage } from '@/types/api';
+import { useRouter } from 'next/router';
 
 export default function GeneralChatPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -14,6 +17,8 @@ export default function GeneralChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { character, q } = router.query;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -21,16 +26,22 @@ export default function GeneralChatPage() {
 
   useEffect(scrollToBottom, [chatMessages]);
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  useEffect(() => {
+    if (q && typeof q === 'string') {
+      handleSendMessage(q);
+    }
+  }, [q]);
 
-    const newMessage: ChatMessage = { type: 'user', value: inputMessage };
+  const handleSendMessage = async (message: string) => {
+    if (!message.trim()) return;
+
+    const newMessage: ChatMessage = { type: 'user', value: message };
     setChatMessages(prev => [...prev, newMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage('koda', inputMessage);
+      const response = await sendChatMessage(character as string || 'koda', message);
       setChatMessages(prev => [...prev, { type: 'assistant', value: response.response }]);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -83,7 +94,7 @@ export default function GeneralChatPage() {
         <main className="container mx-auto px-4 mt-12">
           <Card className="p-6 bg-white bg-opacity-90 shadow-lg rounded-lg">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">General Chat</h2>
+              <h2 className="text-2xl font-bold">Chat with {character || 'Koda'}</h2>
               <Button onClick={startNewChat}>New Chat</Button>
             </div>
             <div className="h-96 overflow-y-auto mb-4">
@@ -104,11 +115,11 @@ export default function GeneralChatPage() {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputMessage)}
                 placeholder="Type your message..."
                 className="flex-grow mr-2"
               />
-              <Button onClick={sendMessage}>Send</Button>
+              <Button onClick={() => handleSendMessage(inputMessage)}>Send</Button>
               <Button onClick={startRecording} className="ml-2">
                 {recordMode ? 'Stop' : 'Record'}
               </Button>
