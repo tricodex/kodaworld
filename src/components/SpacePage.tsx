@@ -41,6 +41,8 @@ const planets: Planet[] = [
 const PlanetButton = ({ planet }: { planet: Planet }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
+
 
   return (
     <ButtonContainer style={{
@@ -92,8 +94,6 @@ const SpacePage = () => {
     svgFilter.innerHTML = '<filter id="blurFilter"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter>';
     document.body.appendChild(svgFilter);
     
-
-
     return () => {
       document.body.removeChild(svgFilter);
     };
@@ -109,8 +109,8 @@ const SpacePage = () => {
           <h2>Our Cosmic Neighborhood</h2>
           <p>The Solar System, born ~4.6 billion years ago, is a celestial dance of the Sun and its orbiting objects:</p>
           <ul>
-            <li>4 inner rocky planets: Mercury, Venus, Earth, and Mars</li>
-            <li>4 outer gas giants: Jupiter, Saturn, Uranus, and Neptune</li>
+            <li>4 inner rocky planets: <b style={{ color: 'gray' }}>Mercury</b>, <b style={{ color: 'orange' }}>Venus</b>, <b style={{ color: 'blue' }}>Earth</b>, and <b style={{ color: 'red' }}>Mars</b></li>
+            <li>4 outer gas giants: <b style={{ color: 'orange' }}>Jupiter</b>, <b style={{ color: 'gold' }}>Saturn</b>, <b style={{ color: 'lightblue' }}>Uranus</b>, and <b style={{ color: 'darkblue' }}>Neptune</b></li>
             <li>Dwarf planets, numerous moons, asteroids, and comets</li>
           </ul>
           <p>The Sun holds 99.86% of the system&apos;s mass. Saturn is famed for its stunning rings, while Jupiter boasts the Great Red Spot. Earth, our blue marble, is the only known harbor of life.</p>

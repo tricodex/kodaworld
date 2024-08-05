@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import CharacterBase from '@/components/CharacterBase';
 import ActivityLayout from '@/components/ActivityLayout';
 import ParticleGame from './LevoAct/ParticleGame';
-import ChemistryLabSim from './LevoAct/ChemistryLabSim';
+import LevoPuzzleGame from './LevoAct/LevoPuzzleGame';
 import PhysicsPuzzle from './LevoAct/PhysicsPuzzle';
 import NumbersGame from './LevoAct/NumbersGame';
 import Koda from '@/components/Koda';
@@ -16,8 +16,8 @@ import { ChatMessage } from '@/types/api';
 const activities = [
   { name: "Koda", key: "Koda" },
   { name: "Particle Game", key: "ParticleGame" },
-  { name: "Chemistry Lab Simulator", key: "ChemistryLabSim" },
-  { name: "Physics Puzzle", key: "PhysicsPuzzle" },
+  { name: "Shapes Game", key: "LevoPuzzleGame" }, 
+  { name: "Interactive Spheres", key: "PhysicsPuzzle" },
   { name: "Numbers Game", key: "NumbersGame" },
 ];
 
@@ -32,7 +32,7 @@ export default function LevoPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { 
       role: 'assistant', 
-      content: "Hello! I'm Levo, the scholarly lion. I'm here to help you explore the fascinating world of science. What would you like to learn about today? We can dive into topics in physics, chemistry, biology, computer science, or any other scientific field you're curious about!",
+      content: "Hello! I'm Levo, the scholarly lion. I'm here to help you explore the fascinating world of science. What would you like to learn about today? We can dive into topics in maths, physics, chemistry, biology, computer science, or any other scientific field you're curious about!",
       timestamp: new Date().toISOString(),
     }
   ]);
@@ -123,8 +123,8 @@ export default function LevoPage() {
         return <Koda studentId={STUDENT_ID} />;
       case "ParticleGame":
         return <ParticleGame />;
-      case "ChemistryLabSim":
-        return <ChemistryLabSim />;
+      case "LevoPuzzleGame":
+        return <LevoPuzzleGame />;
       case "PhysicsPuzzle":
         return <PhysicsPuzzle />;
       case "NumbersGame":

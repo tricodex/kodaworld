@@ -1,29 +1,19 @@
+# Koda World
 
-# KodaWorld
+![KodaWorld](public/kodaworld_image.png)
 
-KodaWorld is an innovative AI-powered educational platform designed to make learning engaging and interactive for students across various subjects. With its unique blend of Falcon LLM technology and gamified learning experiences, KodaWorld aims to revolutionize the way students approach education.
+## Overview
 
-## Table of Contents
+Imagine a world where education isn't just engaging, it's an adventure. That's KodaWorld - a revolutionary AI-powered learning platform that transforms studying into an exciting journey guided by charming animal companions.
 
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Project Structure](#project-structure)
-- [Key Components](#key-components)
-- [Usage](#usage)
-- [Contact](#contact)
+Meet the cast of lovable characters:
+- **Wake the musical whale**: A guide through the world of music and sound.
+- **Levo the scholarly lion**: Ready to unravel the mysteries of science, math, and programming.
+- **Mina the globetrotting monkey**: A partner in exploring geography, cultures, and even space.
+- **Ella the wise elephant**: Here to make history come alive.
+- **Koda the academic**: Represents a friend and mentor in various educational pursuits, emphasizing the spirit of learning and knowledge sharing.
 
-## Features
-
-- **AI-Powered Tutoring**: Engage with advanced AI tutors specialized in different subjects.
-- **Interactive Learning Environments**: Explore environments tailored to each subject.
-- **Gamified Learning Experiences**: Participate in subject-specific games and challenges to reinforce learning.
-- **Personalized Learning Paths**: Benefit from AI-driven curriculum optimization based on individual progress.
-- **Peer Matching**: Collaborate with other students through an intelligent peer matching system.
-- **Real-time Progress Tracking**: Monitor learning progress with detailed analytics and insights.
-- **Multi-subject Support**: Learn across various subjects including Science, History, Geography, and Music.
+With KodaWorld, students don't just memorize facts - they embark on interactive quests, solve puzzles, and engage in hands-on experiments. The cutting-edge AI adapts to each learner's pace and style, ensuring a personalized experience that's both challenging and fun.
 
 ## Technology Stack
 
@@ -35,54 +25,7 @@ KodaWorld is an innovative AI-powered educational platform designed to make lear
 - **Backend**: Python, FastAPI
 - **AI**: Falcon 180b, Falcon 11b, Langchain
 - **Database**: PostgreSQL
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or later)
-- Python (v3.8 or later)
-- pnpm (v6 or later)
-- AI71 API key
-- PostgreSQL database
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-organization/kodaworld.git
-   cd kodaworld
-   ```
-
-2. Install frontend dependencies:
-   ```bash
-   pnpm install
-   ```
-
-3. Install backend dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables:
-   Create a `.env.local` file in the root directory and add:
-   ```bash
-   NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
-   AI71_API_KEY=your-ai71-api-key
-   POSTGRES_URL=your-postgres-url
-   ```
-
-5. Start the development server:
-   ```bash
-   pnpm dev
-   ```
-
-6. In a separate terminal, start the backend server:
-   ```bash
-   python -m uvicorn ai71.main:app --reload
-   ```
-
-7. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+- **Cache**: Redis
 
 ## Project Structure
 
@@ -91,42 +34,334 @@ The project is organized into two main parts:
 1. **Frontend** (Next.js application in `src/` directory)
 2. **Backend** (Python FastAPI application in `ai71/` directory)
 
-Key directories:
+### Backend
 
-- `src/api/`: API handlers
-- `src/app/`: Next.js application pages and components
-- `src/components/`: React components
-- `src/config/`: Configuration files
-- `src/lib/`: Utility libraries
-- `src/styles/`: Styling files
-- `src/tests/`: Test files
-- `src/types/`: Type definitions
-- `src/utils/`: Utility functions
+The key backend components are:
 
-## Key Components
+- **ai71/main.py**: The main entry point of the backend application. The API is set up using FastAPI and the server is run with Uvicorn (`uvicorn ai71.main:app --reload`).
+- **dialogue_management/manager.py**: Manages dialogue with the AI characters.
+- **database.py**: Manages database connections and migrations. Uses SQLAlchemy and Alembic.
+- **curriculum_optimization/optimizer.py**: Optimizes the curriculum based on performance data and learning goals.
 
-- `KodaWorld.tsx`: Main component for the KodaWorld interface
-- `LevoPage.tsx`: Page component for the character Levo, including activities like NumbersGame and ParticleGame.
-- `MinaPage.tsx`: Page component for the character Mina, including activities like CountryGame and CulturalExpedition.
-- `EllaPage.tsx`: Page component for the character Ella, including activities like AncientCivilizationPuzzle and HistoricalTimelineGame.
-- `WakePage.tsx`: Page component for the character Wake, including activities like InstrumentQuiz and MusicVisualizer.
-- `CurriculumCreator.tsx`: Tool for creating customized curriculums.
-- `CurriculumView.tsx`: Component for viewing and managing curriculums.
-- `ElementLab`: Suite of reusable UI components like Article, Button, and Card.
-- `GeneralChatPage.tsx`: Component for general chat functionalities.
-- `LearningProgressComponent.tsx`: Component for tracking learning progress.
-- `NextSteps.tsx`: Component for recommending next steps based on user progress.
+### API Integration
 
-## Usage
+- **chat.ts**: Handles API calls related to chat functionalities.
+- **apiutils.ts**: Contains utility functions for API integration.
 
-After starting the application, users can:
+### Prompt Engineering
 
-1. Navigate through different subject areas represented by animal characters.
-2. Engage in AI-powered tutoring sessions.
-3. Participate in interactive games and simulations.
-4. Track their learning progress and receive personalized recommendations.
-5. Collaborate with peers on various learning activities.
+Effective prompt engineering is crucial for the AI's performance. Key strategies include:
+- **Detailed Prompts**: Clear and detailed prompts guide the AI in generating relevant and accurate responses.
+- **System Messages**: Setting the context and expectations for each interaction.
+- **Contextual User Input**: Including context from past interactions to maintain conversation continuity and relevance.
+- **Character Personas**: Each character in KodaWorld has a distinct personality, knowledge base, and catchphrases to make interactions engaging and educational.
+
+### SpacePage and ElementLab
+
+- **SpacePage**: The interactive space where students engage with the AI characters and complete activities.
+- **ElementLab**: Contains elements and customization options for creating interactive and engaging educational content.
+
+### Optimizer.py Structure
+
+- The optimizer processes current curriculums, performance data, and learning goals to generate optimized learning paths.
+- It saves the optimized curriculum and associated data into the database for future reference and continuous improvement.
+
+### Characters and Activities
+
+- **Wake**: Guides students through a music visualizer and interactive music theory lessons.
+- **Levo**: Engages students with a particle viewer, shapes games, numbers 2048 game, and problem-solving tasks.
+- **Mina**: Leads explorations in geography and space through interactive maps and quizzes.
+- **Ella**: Brings history to life with timelines, significant events, and historical figure highlights.
+- **Koda**: Assists in academic pursuits across various subjects, embodying the role of a knowledgeable friend.
+
+## Key Component: AI API Interface
+
+#### `ai71/ai71_api.py`
+
+Interfaces with the AI API for various functionalities, including chat completions and memory management.
+
+```python
+# ai71/ai71_api.py
+
+import os
+import aiohttp
+import logging
+import json
+from typing import List, Dict, Any, Optional, Union
+from langchain.memory import ConversationBufferMemory
+from langchain.schema import HumanMessage, SystemMessage, AIMessage
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class AI71API:
+    def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.ai71.ai/v1"):
+        self.api_key = api_key or os.getenv('AI71_API_KEY')
+        if not self.api_key:
+            raise ValueError("AI71_API_KEY not found. Please set it as an environment variable.")
+        
+        self.base_url = base_url
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        self.memory = ConversationBufferMemory(return_messages=True)
+
+    async def _make_request(self, endpoint: str, payload: Dict[str, Any], stream: bool = False, max_retries: int = 3) -> Union[Dict[str, Any], aiohttp.ClientResponse]:
+        url = f"{self.base_url}/{endpoint}"
+        for attempt in range(max_retries):
+            try:
+                async with aiohttp.ClientSession(headers=self.headers) as session:
+                    async with session.post(url, json=payload) as response:
+                        response.raise_for_status()
+                        if stream:
+                            return response
+                        else:
+                            return await response.json()
+            except aiohttp.ClientError as e:
+                logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+
+    async def chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-11b", **kwargs) -> Dict[str, Any]:
+        payload = {
+            "model": model,
+            "messages": messages,
+            **kwargs
+        }
+        response = await self._make_request("chat/completions", payload)
+        await self._update_memory(messages, response['choices'][0]['message']['content'])
+        return response
+
+    async def _update_memory(self, messages: List[Dict[str, str]], response: str):
+        for message in messages:
+            if message['role'] == 'user':
+                self.memory.chat_memory.add_user_message(message['content'])
+            elif message['role'] == 'system':
+                self.memory.chat_memory.add_message(SystemMessage(content=message['content']))
+        self.memory.chat_memory.add_ai_message(response)
+
+    def get_conversation_history(self) -> List[Union[HumanMessage, AIMessage, SystemMessage]]:
+        return self.memory.chat_memory.messages
+
+    async def clear_memory(self):
+        self.memory.clear()
+
+    async def generate_with_memory(self, user_input: str, model: str = "falcon-180b", messages: List[Dict[str, str]] = None, **kwargs) -> str:
+        if messages is None:
+            messages = self.get_conversation_history()
+            messages.append(HumanMessage(content=user_input))
+            messages = [{"role": m.type, "content": m.content} for m in messages]
+        else:
+            messages.append({"role": "user", "content": user_input})
+        
+        response = await self.chat_completion(messages, model=model, **kwargs)
+        return response['choices'][0]['message']['content']
+```
+
+This section of the code handles interactions with the AI API, managing chat completions, and maintaining conversation history through a memory buffer. The class `AI71API` includes methods for making requests to the API, processing chat completions, updating memory, and retrieving conversation history.
+
+## Key Component: Dialogue Management
+
+```bash
+# ai71/dialogue_management/manager.py
+import logging
+from typing import List, Dict, Any
+from datetime import datetime
+import random
+
+class DialogueManager:
+    def __init__(self):
+        self.logger = self._setup_logger()
+        self.conversations: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
+        self.character_personas = {
+            "wake": {
+                "name": "Wake",
+                "description": "the Witty",
+                "traits": ["enthusiastic", "knowledgeable about music", "encouraging"],
+                "topics": ["music theory", "instruments", "composers", "musical history"],
+                "catchphrases": ["Let's dive into the ocean of music!", "That sounds harmonious!"]
+            },
+            "levo": {
+                "name": "Levo",
+                "description": "the Curious",
+                "traits": ["analytical", "patient", "curious"],
+                "topics": ["science", "math", "programming", "problem-solving"],
+                "catchphrases": ["Let's experiment with that idea!", "Fascinating hypothesis!"]
+            },
+            "mina": {
+                "name": "Mina",
+                "description": "the Traveler",
+                "traits": ["adventurous", "curious", "friendly"],
+                "topics": ["geography", "cultures", "space", "travel"],
+                "catchphrases": ["Let's embark on a new adventure!", "The world is full of wonders!"]
+            },
+            "ella": {
+                "name": "Ella",
+                "description": "the Nostalgic",
+                "traits": ["wise", "thoughtful", "insightful"],
+                "topics": ["history", "historical figures", "historical impact"],
+                "catchphrases": ["History has much to teach us!", "Let's journey through time!"]
+            },
+            "ai-tutor": {
+                "name": "Koda",
+                "description": "the AI Tutor",
+                "traits": ["adaptable", "encouraging", "patient"],
+                "topics": ["various subjects", "learning strategies", "study skills"],
+                "catchphrases": ["Learning is an adventure!", "Every question is a step towards knowledge!"]
+            }
+        }
+
+    def _setup_logger(self):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        return logger
+    
+    def _generate_character_response(self, character: str, content: str) -> str:
+        persona = self.character_personas.get(character, self.character_personas["ai-tutor"])
+        response = f"{content}" # Removed persona['name'] and persona['description']
+        if random.random() < 0.1:  # 10% chance to add a catchphrase
+            response += f" {random.choice(persona['catchphrases'])}"
+        return response
+
+    async def process_ai_response(self, response: str, student_id: str, character: str):
+        character_response = self._generate_character_response(character, response)
+        self.conversations.setdefault(student_id, {}).setdefault(character, []).append({
+            "role": "assistant",
+            "content": character_response,
+            "timestamp": datetime.now().isoformat(),
+            "character": character
+        })
+        return character_response
+
+    async def get_conversation_history(self, student_id: str, character: str) -> List[Dict[str, str]]:
+        try:
+            history = self.conversations.get(student_id, {}).get(character, [])
+            self.logger.info(f"Retrieved conversation history for student {student_id} with character {character}")
+            return history
+        except Exception as e:
+            self.logger.error(f"Error retrieving conversation history for student {student_id} with character {character}: {str(e)}")
+            return []
+
+    async def clear_history(self, student_id: str, character: str):
+        try:
+            if student_id in self.conversations and character in self.conversations[student_id]:
+                self.conversations[student_id][character] = []
+            self.logger.info(f"Cleared conversation history for student {student_id} with character {character}")
+        except Exception as e:
+            self.logger.error(f"Error clearing conversation history for student {student_id} with character {character}: {str(e)}")
+
+    async def collect_feedback(self, student_id: str, feedback: str):
+        try:
+            self.logger.info(f"Collected feedback from student {student_id}: {feedback}")
+            for character in self.conversations.get(student_id, {}):
+                self.conversations[student_id][character].append({
+                    "role": "feedback",
+                    "content": feedback,
+                    "timestamp": datetime.now().isoformat()
+                })
+        except Exception as e:
+            self.logger.error(f"Error collecting feedback from student {student_id}: {str(e)}")
+
+    async def analyze_learning_progress(self, student_id: str) -> Dict[str, Any]:
+        try:
+            all_interactions = [
+                msg 
+                for character_history in self.conversations.get(student_id, {}).values() 
+                for msg in character_history
+            ]
+            interaction_count = len(all_interactions)
+            topic_coverage = len(set(msg["character"] for msg in all_interactions if msg["role"] == "assistant"))
+            progress = min((interaction_count / 50) * 0.5 + (topic_coverage / len(self.character_personas)) * 0.5, 1.0)
+            self.logger.info(f"Analyzed learning progress for student {student_id}")
+           
+
+ return {"progress": progress, "interaction_count": interaction_count, "topic_coverage": topic_coverage}
+        except Exception as e:
+            self.logger.error(f"Error analyzing learning progress for student {student_id}: {str(e)}")
+            return {"progress": 0.0, "interaction_count": 0, "topic_coverage": 0}
+
+    async def recommend_next_steps(self, student_id: str) -> List[str]:
+        try:
+            progress_data = await self.analyze_learning_progress(student_id)
+            progress = progress_data["progress"]
+            recommendations = []
+            if progress < 0.3:
+                recommendations = [
+                    "Continue exploring topics with different KodaWorld characters",
+                    "Try out some of the interactive games and activities",
+                    "Don't hesitate to ask questions about topics you find interesting"
+                ]
+            elif progress < 0.7:
+                recommendations = [
+                    "Dive deeper into topics you've shown interest in",
+                    "Challenge yourself with more advanced questions",
+                    "Try to make connections between different subjects you've learned about"
+                ]
+            else:
+                recommendations = [
+                    "Explore advanced topics in your favorite subjects",
+                    "Try teaching what you've learned to others",
+                    "Work on a project that combines multiple areas of knowledge"
+                ]
+            self.logger.info(f"Generated recommendations for student {student_id}")
+            return recommendations
+        except Exception as e:
+            self.logger.error(f"Error generating recommendations for student {student_id}: {str(e)}")
+            return ["Continue with your current learning path"]
+
+    async def optimize_curriculum(self, current_curriculum: Dict, performance_data: Dict, learning_goals: List[str]) -> Dict:
+        try:
+            self.logger.info(f"Optimizing curriculum")
+            
+            # This is a simplified optimization. In a real implementation, you would use more sophisticated algorithms.
+            optimized_curriculum = current_curriculum.copy()
+            avg_performance = sum(performance_data.values()) / len(performance_data) if performance_data else 0
+            
+            if avg_performance < 0.3:
+                optimized_curriculum["difficulty"] = "beginner"
+            elif avg_performance < 0.7:
+                optimized_curriculum["difficulty"] = "intermediate"
+            else:
+                optimized_curriculum["difficulty"] = "advanced"
+            
+            # Add more topics based on learning goals
+            optimized_curriculum["topics"] = list(set(current_curriculum.get("topics", []) + learning_goals))
+            
+            return {
+                "optimized_curriculum": optimized_curriculum,
+                "performance_data": performance_data,
+                "learning_goals": learning_goals,
+            }
+        except Exception as e:
+            self.logger.error(f"Error optimizing curriculum: {str(e)}")
+            return {"error": "Unable to optimize curriculum at this time."}
+```
 
 ## Contact
 
-For any queries, please contact me at [kodaworld.edu@gmail.com](kodaworld.edu@gmail.com)
+For any queries, please contact at [kodaworld.edu@gmail.com](mailto:kodaworld.edu@gmail.com).
+
+## Future Developments
+
+- **Peer Matcher**: Being developed to facilitate group learning.
+- **Academica**: Under construction to enhance academic content.
+- **Gamification**: In progress to add engaging game-like elements to the learning process.
+
+## Setup Instructions
+
+1. Clone the repository.
+2. Navigate to the project directory.
+3. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Run the FastAPI server:
+   ```bash
+   uvicorn ai71.main:app --reload
+   ```

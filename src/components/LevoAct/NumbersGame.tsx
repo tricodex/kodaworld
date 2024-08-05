@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
-const GRID_SIZE = 5;
+const GRID_SIZE = 4;
 
 interface Tile {
   value: number;
@@ -16,7 +16,6 @@ const NumbersGame: React.FC = () => {
   const [gameOver, setGameOver] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  // The assistant generates a new tile with a value of 2 or 4
   const generateNewTile = useCallback((currentTiles: Tile[]): Tile => {
     const emptyCells = [];
     for (let row = 0; row < GRID_SIZE; row++) {
@@ -35,13 +34,12 @@ const NumbersGame: React.FC = () => {
     };
   }, []);
 
-  // The assistant implements the core game logic for moving tiles
   const moveTiles = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     setTiles(prevTiles => {
       const newTiles = [...prevTiles];
       let moved = false;
       let scoreIncrease = 0;
-
+  
       const getNextPosition = (row: number, col: number): [number, number] => {
         switch (direction) {
           case 'up': return [row - 1, col];
@@ -50,7 +48,7 @@ const NumbersGame: React.FC = () => {
           case 'right': return [row, col + 1];
         }
       };
-
+  
       const sortedTiles = newTiles.sort((a, b) => {
         if (direction === 'up' || direction === 'down') {
           return direction === 'up' ? a.row - b.row : b.row - a.row;
@@ -58,14 +56,15 @@ const NumbersGame: React.FC = () => {
           return direction === 'left' ? a.col - b.col : b.col - a.col;
         }
       });
-
+  
       for (const tile of sortedTiles) {
         let { row, col } = tile;
         let [nextRow, nextCol] = getNextPosition(row, col);
-
+        let merged = false;
+  
         while (
           nextRow >= 0 && nextRow < GRID_SIZE &&
-          nextCol >= 0 && nextCol < GRID_SIZE
+          nextCol >= 0 && nextCol < GRID_SIZE && !merged
         ) {
           const targetTile = newTiles.find(t => t.row === nextRow && t.col === nextCol);
           
@@ -73,41 +72,45 @@ const NumbersGame: React.FC = () => {
             row = nextRow;
             col = nextCol;
             moved = true;
-          } else if (targetTile.value === tile.value) {
+          } else if (targetTile.value === tile.value && !merged) {
             targetTile.value *= 2;
             scoreIncrease += targetTile.value;
             newTiles.splice(newTiles.indexOf(tile), 1);
             moved = true;
-            break;
+            merged = true;
           } else {
             break;
           }
-
+  
           [nextRow, nextCol] = getNextPosition(row, col);
         }
-
+  
         if (tile.row !== row || tile.col !== col) {
           tile.row = row;
           tile.col = col;
           moved = true;
         }
       }
-
+  
       if (moved) {
         const newTile = generateNewTile(newTiles);
         newTiles.push(newTile);
         setScore(prevScore => prevScore + scoreIncrease);
       }
-
+  
       if (newTiles.length === GRID_SIZE * GRID_SIZE && !canMove(newTiles)) {
         setGameOver(true);
       }
-
+  
+      console.log("Tiles after move:", newTiles);
+      console.log("Score:", score);
+      console.log("Game Over:", gameOver);
+  
       return newTiles;
     });
   }, [generateNewTile]);
+  
 
-  // The assistant checks if any moves are possible
   const canMove = (tiles: Tile[]): boolean => {
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];

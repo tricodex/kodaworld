@@ -75,8 +75,8 @@ export const SolarSystemInfo = styled.div`
   }
 
   ul {
-    list-style-type: none;
-    padding-left: 0;
+    list-style-type: disc;
+    padding-left: 30px;
   }
 
   li::before {
@@ -85,6 +85,7 @@ export const SolarSystemInfo = styled.div`
     display: inline-block;
     width: 1em;
     margin-left: -1em;
+    margin-bottom: 5px;
   }
 `;
 
