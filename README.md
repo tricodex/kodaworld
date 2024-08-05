@@ -4,6 +4,32 @@
 
 ## Overview
 
+# Table of Contents
+
+1. [Koda World](#koda-world)
+2. [Overview](#overview)
+3. [Technology Stack](#technology-stack)
+4. [Project Structure](#project-structure)
+    - [Backend](#backend)
+        - [ai71/main.py](#ai71mainpy)
+        - [dialogue_management/manager.py](#dialogue_managementmanagerpy)
+        - [database.py](#databasepy)
+        - [curriculum_optimization/optimizer.py](#curriculum_optimizationoptimizerpy)
+    - [API Integration](#api-integration)
+        - [chat.ts](#chatts)
+        - [apiutils.ts](#apiutilsts)
+5. [Prompt Engineering](#prompt-engineering)
+6. [SpacePage and ElementLab](#spacepage-and-elementlab)
+7. [Optimizer.py Structure](#optimizerpy-structure)
+8. [Characters and Activities](#characters-and-activities)
+9. [Contact](#contact)
+10. [Future Developments](#future-developments)
+11. [Setup Instructions](#setup-instructions)
+12. [Key Component: AI API Interface](#key-component-ai-api-interface)
+    - [ai71/ai71_api.py](#ai71ai71_apipy)
+13. [Key Component: Dialogue Management](#key-component-dialogue-management)
+    - [ai71/dialogue_management/manager.py](#ai71dialogue_managementmanagerpy-1)
+
 Imagine a world where education isn't just engaging, it's an adventure. That's KodaWorld - a revolutionary AI-powered learning platform that transforms studying into an exciting journey guided by charming animal companions.
 
 Meet the cast of lovable characters:
@@ -104,7 +130,7 @@ For any queries, please contact at [kodaworld.edu@gmail.com](mailto:kodaworld.ed
 
 ## Key Component: AI API Interface
 
-### `ai71/ai71_api.py`
+#### `ai71/ai71_api.py`
 
 Interfaces with the AI API for various functionalities, including chat completions and memory management.
 
@@ -192,7 +218,7 @@ This section of the code handles interactions with the AI API, managing chat com
 
 ## Key Component: Dialogue Management
 
-### `ai71/dialogue_management/manager.py`
+#### `ai71/dialogue_management/manager.py`
 
 The `DialogueManager` class manages conversations between students and AI characters. It handles logging, character personas, generating character responses, and tracking conversation history.
 
