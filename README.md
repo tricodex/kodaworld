@@ -7,6 +7,7 @@
 Imagine a world where education isn't just engaging, it's an adventure. That's KodaWorld - a revolutionary AI-powered learning platform that transforms studying into an exciting journey guided by charming animal companions.
 
 Meet the cast of lovable characters:
+
 - **Wake the musical whale**: A guide through the world of music and sound.
 - **Levo the scholarly lion**: Ready to unravel the mysteries of science, math, and programming.
 - **Mina the globetrotting monkey**: A partner in exploring geography, cultures, and even space.
@@ -51,6 +52,7 @@ The key backend components are:
 ### Prompt Engineering
 
 Effective prompt engineering is crucial for the AI's performance. Key strategies include:
+
 - **Detailed Prompts**: Clear and detailed prompts guide the AI in generating relevant and accurate responses.
 - **System Messages**: Setting the context and expectations for each interaction.
 - **Contextual User Input**: Including context from past interactions to maintain conversation continuity and relevance.
@@ -74,9 +76,35 @@ Effective prompt engineering is crucial for the AI's performance. Key strategies
 - **Ella**: Brings history to life with timelines, significant events, and historical figure highlights.
 - **Koda**: Assists in academic pursuits across various subjects, embodying the role of a knowledgeable friend.
 
+## Contact
+
+For any queries, please contact at [kodaworld.edu@gmail.com](mailto:kodaworld.edu@gmail.com).
+
+## Future Developments
+
+- **Peer Matcher**: Being developed to facilitate group learning.
+- **Academica**: Under construction to enhance academic content.
+- **Gamification**: In progress to add engaging game-like elements to the learning process.
+
+## Setup Instructions
+
+1. Clone the repository.
+2. Navigate to the project directory.
+3. Install the required dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Run the FastAPI server:
+
+   ```bash
+   uvicorn ai71.main:app --reload
+   ```
+
 ## Key Component: AI API Interface
 
-#### `ai71/ai71_api.py`
+### `ai71/ai71_api.py`
 
 Interfaces with the AI API for various functionalities, including chat completions and memory management.
 
@@ -164,8 +192,35 @@ This section of the code handles interactions with the AI API, managing chat com
 
 ## Key Component: Dialogue Management
 
-```bash
-# ai71/dialogue_management/manager.py
+### `ai71/dialogue_management/manager.py`
+
+The `DialogueManager` class manages conversations between students and AI characters. It handles logging, character personas, generating character responses, and tracking conversation history.
+
+### Key Features
+
+1. **Character Personas**:
+    - Wake (the Witty): Music expert with catchphrases like "Let's dive into the ocean of music!"
+    - Levo (the Curious): Science and math expert with catchphrases like "Let's experiment with that idea!"
+    - Mina (the Traveler): Geography and culture expert with catchphrases like "Let's embark on a new adventure!"
+    - Ella (the Nostalgic): History expert with catchphrases like "History has much to teach us!"
+    - Koda (the AI Tutor): General knowledge with catchphrases like "Learning is an adventure!"
+
+2. **Logging Setup**:
+    - Initializes a logger to track events and errors.
+
+3. **Conversation Management**:
+    - Tracks conversations for each student and character.
+    - Generates character responses with a chance to include a catchphrase.
+    - Processes and records AI responses and user input.
+
+4. **Feedback and Progress Analysis**:
+    - Collects and logs feedback from students.
+    - Analyzes learning progress based on conversation history.
+    - Recommends next steps based on analyzed progress.
+
+### Code Summary
+
+```python
 import logging
 from typing import List, Dict, Any
 from datetime import datetime
@@ -176,41 +231,11 @@ class DialogueManager:
         self.logger = self._setup_logger()
         self.conversations: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
         self.character_personas = {
-            "wake": {
-                "name": "Wake",
-                "description": "the Witty",
-                "traits": ["enthusiastic", "knowledgeable about music", "encouraging"],
-                "topics": ["music theory", "instruments", "composers", "musical history"],
-                "catchphrases": ["Let's dive into the ocean of music!", "That sounds harmonious!"]
-            },
-            "levo": {
-                "name": "Levo",
-                "description": "the Curious",
-                "traits": ["analytical", "patient", "curious"],
-                "topics": ["science", "math", "programming", "problem-solving"],
-                "catchphrases": ["Let's experiment with that idea!", "Fascinating hypothesis!"]
-            },
-            "mina": {
-                "name": "Mina",
-                "description": "the Traveler",
-                "traits": ["adventurous", "curious", "friendly"],
-                "topics": ["geography", "cultures", "space", "travel"],
-                "catchphrases": ["Let's embark on a new adventure!", "The world is full of wonders!"]
-            },
-            "ella": {
-                "name": "Ella",
-                "description": "the Nostalgic",
-                "traits": ["wise", "thoughtful", "insightful"],
-                "topics": ["history", "historical figures", "historical impact"],
-                "catchphrases": ["History has much to teach us!", "Let's journey through time!"]
-            },
-            "ai-tutor": {
-                "name": "Koda",
-                "description": "the AI Tutor",
-                "traits": ["adaptable", "encouraging", "patient"],
-                "topics": ["various subjects", "learning strategies", "study skills"],
-                "catchphrases": ["Learning is an adventure!", "Every question is a step towards knowledge!"]
-            }
+            "wake": {"name": "Wake", "description": "the Witty", "traits": ["enthusiastic", "knowledgeable about music", "encouraging"], "topics": ["music theory", "instruments", "composers", "musical history"], "catchphrases": ["Let's dive into the ocean of music!", "That sounds harmonious!"]},
+            "levo": {"name": "Levo", "description": "the Curious", "traits": ["analytical", "patient", "curious"], "topics": ["science", "math", "programming", "problem-solving"], "catchphrases": ["Let's experiment with that idea!", "Fascinating hypothesis!"]},
+            "mina": {"name": "Mina", "description": "the Traveler", "traits": ["adventurous", "curious", "friendly"], "topics": ["geography", "cultures", "space", "travel"], "catchphrases": ["Let's embark on a new adventure!", "The world is full of wonders!"]},
+            "ella": {"name": "Ella", "description": "the Nostalgic", "traits": ["wise", "thoughtful", "insightful"], "topics": ["history", "historical figures", "historical impact"], "catchphrases": ["History has much to teach us!", "Let's journey through time!"]},
+            "ai-tutor": {"name": "Koda", "description": "the AI Tutor", "traits": ["adaptable", "encouraging", "patient"], "topics": ["various subjects", "learning strategies", "study skills"], "catchphrases": ["Learning is an adventure!", "Every question is a step towards knowledge!"]}
         }
 
     def _setup_logger(self):
@@ -224,144 +249,71 @@ class DialogueManager:
     
     def _generate_character_response(self, character: str, content: str) -> str:
         persona = self.character_personas.get(character, self.character_personas["ai-tutor"])
-        response = f"{content}" # Removed persona['name'] and persona['description']
+        response = f"{content}"
         if random.random() < 0.1:  # 10% chance to add a catchphrase
             response += f" {random.choice(persona['catchphrases'])}"
         return response
 
     async def process_ai_response(self, response: str, student_id: str, character: str):
         character_response = self._generate_character_response(character, response)
-        self.conversations.setdefault(student_id, {}).setdefault(character, []).append({
-            "role": "assistant",
-            "content": character_response,
-            "timestamp": datetime.now().isoformat(),
-            "character": character
-        })
+        self.conversations.setdefault(student_id, {}).setdefault(character, []).append({"role": "assistant", "content": character_response, "timestamp": datetime.now().isoformat(), "character": character})
         return character_response
 
     async def get_conversation_history(self, student_id: str, character: str) -> List[Dict[str, str]]:
-        try:
-            history = self.conversations.get(student_id, {}).get(character, [])
-            self.logger.info(f"Retrieved conversation history for student {student_id} with character {character}")
-            return history
-        except Exception as e:
-            self.logger.error(f"Error retrieving conversation history for student {student_id} with character {character}: {str(e)}")
-            return []
+        history = self.conversations.get(student_id, {}).get(character, [])
+        self.logger.info(f"Retrieved conversation history for student {student_id} with character {character}")
+        return history
 
     async def clear_history(self, student_id: str, character: str):
-        try:
-            if student_id in self.conversations and character in self.conversations[student_id]:
-                self.conversations[student_id][character] = []
-            self.logger.info(f"Cleared conversation history for student {student_id} with character {character}")
-        except Exception as e:
-            self.logger.error(f"Error clearing conversation history for student {student_id} with character {character}: {str(e)}")
+        if student_id in self.conversations and character in self.conversations[student_id]:
+            self.conversations[student_id][character] = []
+        self.logger.info(f"Cleared conversation history for student {student_id} with character {character}")
 
     async def collect_feedback(self, student_id: str, feedback: str):
-        try:
-            self.logger.info(f"Collected feedback from student {student_id}: {feedback}")
-            for character in self.conversations.get(student_id, {}):
-                self.conversations[student_id][character].append({
-                    "role": "feedback",
-                    "content": feedback,
-                    "timestamp": datetime.now().isoformat()
-                })
-        except Exception as e:
-            self.logger.error(f"Error collecting feedback from student {student_id}: {str(e)}")
+        self.logger.info(f"Collected feedback from student {student_id}: {feedback}")
+        for character in self.conversations.get(student_id, {}):
+            self.conversations[student_id][character].append({"role": "feedback", "content": feedback, "timestamp": datetime.now().isoformat()})
 
     async def analyze_learning_progress(self, student_id: str) -> Dict[str, Any]:
-        try:
-            all_interactions = [
-                msg 
-                for character_history in self.conversations.get(student_id, {}).values() 
-                for msg in character_history
-            ]
-            interaction_count = len(all_interactions)
-            topic_coverage = len(set(msg["character"] for msg in all_interactions if msg["role"] == "assistant"))
-            progress = min((interaction_count / 50) * 0.5 + (topic_coverage / len(self.character_personas)) * 0.5, 1.0)
-            self.logger.info(f"Analyzed learning progress for student {student_id}")
-           
-
- return {"progress": progress, "interaction_count": interaction_count, "topic_coverage": topic_coverage}
-        except Exception as e:
-            self.logger.error(f"Error analyzing learning progress for student {student_id}: {str(e)}")
-            return {"progress": 0.0, "interaction_count": 0, "topic_coverage": 0}
+        all_interactions = [msg for character_history in self.conversations.get(student_id, {}).values() for msg in character_history]
+        interaction_count = len(all_interactions)
+        topic_coverage = len(set(msg["character"] for msg in all_interactions if msg["role"] == "assistant"))
+        progress = min((interaction_count / 50) * 0.5 + (topic_coverage / len(self.character_personas)) * 0.5, 1.0)
+        self.logger.info(f"Analyzed learning progress for student {student_id}")
+        return {"progress": progress, "interaction_count": interaction_count, "topic_coverage": topic_coverage}
 
     async def recommend_next_steps(self, student_id: str) -> List[str]:
-        try:
-            progress_data = await self.analyze_learning_progress(student_id)
-            progress = progress_data["progress"]
-            recommendations = []
-            if progress < 0.3:
-                recommendations = [
-                    "Continue exploring topics with different KodaWorld characters",
-                    "Try out some of the interactive games and activities",
-                    "Don't hesitate to ask questions about topics you find interesting"
-                ]
-            elif progress < 0.7:
-                recommendations = [
-                    "Dive deeper into topics you've shown interest in",
-                    "Challenge yourself with more advanced questions",
-                    "Try to make connections between different subjects you've learned about"
-                ]
-            else:
-                recommendations = [
-                    "Explore advanced topics in your favorite subjects",
-                    "Try teaching what you've learned to others",
-                    "Work on a project that combines multiple areas of knowledge"
-                ]
-            self.logger.info(f"Generated recommendations for student {student_id}")
-            return recommendations
-        except Exception as e:
-            self.logger.error(f"Error generating recommendations for student {student_id}: {str(e)}")
-            return ["Continue with your current learning path"]
+        progress_data = await self.analyze_learning_progress(student_id)
+        progress = progress_data["progress"]
+        if progress < 0.3:
+            recommendations = ["Continue exploring topics with different KodaWorld characters", "Try out some of the interactive games and activities", "Don't hesitate to ask questions about topics you find interesting"]
+        elif progress < 0.7:
+            recommendations = ["Dive deeper into topics you've shown interest in", "Challenge yourself with more advanced questions", "Try to make connections between different subjects you've learned about"]
+        else:
+            recommendations = ["Explore advanced topics in your favorite subjects", "Try teaching what you've learned to others", "Work on a project that combines multiple areas of knowledge"]
+        self.logger.info(f"Generated recommendations for student {student_id}")
+        return recommendations
 
     async def optimize_curriculum(self, current_curriculum: Dict, performance_data: Dict, learning_goals: List[str]) -> Dict:
-        try:
-            self.logger.info(f"Optimizing curriculum")
-            
-            # This is a simplified optimization. In a real implementation, you would use more sophisticated algorithms.
-            optimized_curriculum = current_curriculum.copy()
-            avg_performance = sum(performance_data.values()) / len(performance_data) if performance_data else 0
-            
-            if avg_performance < 0.3:
-                optimized_curriculum["difficulty"] = "beginner"
-            elif avg_performance < 0.7:
-                optimized_curriculum["difficulty"] = "intermediate"
-            else:
-                optimized_curriculum["difficulty"] = "advanced"
-            
-            # Add more topics based on learning goals
-            optimized_curriculum["topics"] = list(set(current_curriculum.get("topics", []) + learning_goals))
-            
-            return {
-                "optimized_curriculum": optimized_curriculum,
-                "performance_data": performance_data,
-                "learning_goals": learning_goals,
-            }
-        except Exception as e:
-            self.logger.error(f"Error optimizing curriculum: {str(e)}")
-            return {"error": "Unable to optimize curriculum at this time."}
+        self.logger.info(f"Optimizing curriculum")
+        optimized_curriculum = current_curriculum.copy()
+        avg_performance = sum(performance_data.values()) / len(performance_data) if performance_data else 0
+        if avg_performance < 0.3:
+            optimized_curriculum["difficulty"] = "beginner"
+        elif avg_performance < 0.7:
+            optimized_curriculum["difficulty"] = "intermediate"
+        else:
+            optimized_curriculum["difficulty"] = "advanced"
+        optimized_curriculum["topics"] = list(set(current_curriculum.get("topics", []) + learning_goals))
+        return {"optimized_curriculum": optimized_curriculum, "performance_data": performance_data, "learning_goals": learning_goals}
 ```
 
-## Contact
+### Summary
 
-For any queries, please contact at [kodaworld.edu@gmail.com](mailto:kodaworld.edu@gmail.com).
-
-## Future Developments
-
-- **Peer Matcher**: Being developed to facilitate group learning.
-- **Academica**: Under construction to enhance academic content.
-- **Gamification**: In progress to add engaging game-like elements to the learning process.
-
-## Setup Instructions
-
-1. Clone the repository.
-2. Navigate to the project directory.
-3. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Run the FastAPI server:
-   ```bash
-   uvicorn ai71.main:app --reload
-   ```
+- **Logging**: Setup and usage for debugging and tracking.
+- **Character Personas**: Predefined traits and responses for each character.
+- **Response Generation**: Creating character-specific responses.
+- **Conversation Management**: Storing and retrieving conversation history.
+- **Feedback Collection**: Logging feedback from students.
+- **Progress Analysis**: Evaluating student interaction and progress.
+- **Curriculum Optimization**: Adjusting curriculum based on performance data.
