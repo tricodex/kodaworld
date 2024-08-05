@@ -1,14 +1,24 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getCurriculum } from '@/api/chat';
 import { useToast } from "@/components/ui/use-toast";
+import { sendChatMessage } from '@/api/chat';
+
+
 
 const CurriculumView: React.FC = () => {
   const [curriculum, setCurriculum] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { addToast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
+    
+    
     const fetchCurriculum = async () => {
       try {
         const response:any = await getCurriculum('latest');  // Fetch the latest curriculum
@@ -25,7 +35,7 @@ const CurriculumView: React.FC = () => {
     };
 
     fetchCurriculum();
-  }, []);
+  }, [sendChatMessage, scrollToBottom]);
 
   if (isLoading) return <div>Loading curriculum...</div>;
   if (!curriculum) return <div>No curriculum found.</div>;

@@ -31,11 +31,12 @@ declare global {
 export default function WakePage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
-      type: 'assistant',
-      value: "Hello there! I'm Wake, your musical whale guide to the world of sound and melody. Ready to dive into the ocean of music? Whether you want to learn about music theory, instruments, composition, or just enjoy some tunes, I'm here to help. What musical adventure would you like to start today?"
+      role: 'assistant',
+      content: "Hello there! I'm Wake, your musical whale guide to the world of sound and melody. Ready to dive into the ocean of music? Whether you want to learn about music theory, instruments, composition, or just enjoy some tunes, I'm here to help. What musical adventure would you like to start today?",
+      timestamp: new Date().toISOString()
     }
   ]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [input, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
   const [currentActivity, setCurrentActivity] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export default function WakePage() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const history = await getConversationHistory(STUDENT_ID);
+        const history = await getConversationHistory(STUDENT_ID, "wake");
         if (history.length > 0) {
           setChatMessages(history);
         }
@@ -67,67 +68,63 @@ export default function WakePage() {
     };
 
     fetchHistory();
-  }, [addToast]);
+  }, [STUDENT_ID, addToast]);
 
   const handleSendMessage = useCallback(async () => {
-    if (!inputMessage.trim()) return;
+    if (!input.trim()) return;
 
-    const newMessage: ChatMessage = { type: 'user', value: inputMessage };
-    setChatMessages(prev => [...prev, newMessage]);
+    const newMessage: ChatMessage = {
+      role: 'user',
+      content: input,
+      timestamp: new Date().toISOString(),
+    };
+
+    setChatMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage('wake', inputMessage);
-      setChatMessages(prev => [...prev, { type: 'assistant', value: response.response }]);
+      const response = await sendChatMessage('wake', input, STUDENT_ID);
+      setChatMessages((prevMessages) => [...prevMessages, {
+        role: 'assistant',
+        content: response.response,
+        timestamp: new Date().toISOString(),
+      }]);
     } catch (error) {
       console.error('Error sending message:', error);
-      setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
       addToast({
         title: "Error",
         description: "Failed to send message. Please try again.",
       });
     } finally {
       setIsLoading(false);
+      scrollToBottom();
     }
-  }, [inputMessage, addToast]);
+  }, [input, STUDENT_ID, addToast, scrollToBottom]);
 
-  const startRecording = useCallback(() => {
-    if (!('webkitSpeechRecognition' in window)) {
+  const startRecording = () => {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.start();
+    setRecordMode(true);
+
+    recognition.onend = function () {
+      setRecordMode(false);
+    };
+
+    recognition.onresult = function (event: any) {
+      const transcript = event.results[0][0].transcript;
+      setInputMessage(transcript);
+    };
+
+    recognition.onerror = function (event: any) {
+      console.error(event);
       addToast({
-        title: "Speech Recognition Unavailable",
-        description: "Your browser does not support speech recognition. Please use Google Chrome.",
+        title: "Speech Recognition Error",
+        description: "An error occurred during speech recognition. Please try again.",
       });
-    } else {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-      recognition.start();
-
-      recognition.onstart = function () {
-        setRecordMode(true);
-      };
-
-      recognition.onend = function () {
-        setRecordMode(false);
-      };
-
-      recognition.onresult = function (event: any) {
-        const transcript = event.results[0][0].transcript;
-        setInputMessage(transcript);
-      };
-
-      recognition.onerror = function (event: any) {
-        console.error(event);
-        addToast({
-          title: "Speech Recognition Error",
-          description: "An error occurred during speech recognition. Please try again.",
-        });
-      };
-    }
-  }, [addToast]);
+    };
+  };
 
   const toggleActivity = useCallback((activity: string | null) => {
     setCurrentActivity(activity);
@@ -148,7 +145,7 @@ export default function WakePage() {
       default:
         return null;
     }
-  }, [currentActivity]);
+  }, [currentActivity, STUDENT_ID]);
 
   return (
     <div className="relative min-h-screen">
@@ -162,26 +159,26 @@ export default function WakePage() {
         progressTitle="Your Musical Journey"
         onSendMessage={handleSendMessage}
         onStartRecording={startRecording}
-        inputMessage={inputMessage}
+        input={input}
         setInputMessage={setInputMessage}
         recordMode={recordMode}
       >
         {chatMessages.map((message, index) => (
-          <div key={index} className={`chat-message ${message.type === 'user' ? 'flex justify-end' : 'flex justify-start'}`}>
-            <div className={`flex items-end ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+          <div key={index} className={`chat-message ${message.role === 'user' ? 'flex justify-end' : 'flex justify-start'}`}>
+            <div className={`flex items-end ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
               <Image
-                src={message.type === 'user' ? '/student_01.png' : '/animals/wake.png'}
-                alt={message.type === 'user' ? 'User' : 'Wake'}
+                src={message.role === 'user' ? '/student_01.png' : '/animals/wake.png'}
+                alt={message.role === 'user' ? 'User' : 'Wake'}
                 width={24}
                 height={24}
                 className="rounded-full"
               />
-              <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
+              <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div>
                   <span className={`px-4 py-2 rounded-lg inline-block ${
-                    message.type === 'user' ? 'rounded-br-none bg-blue-600 text-white' : 'rounded-bl-none bg-gray-300 text-gray-600'
+                    message.role === 'user' ? 'rounded-br-none bg-blue-600 text-white' : 'rounded-bl-none bg-gray-300 text-gray-600'
                   }`}>
-                    {message.value}
+                    {message.content}
                   </span>
                 </div>
               </div>

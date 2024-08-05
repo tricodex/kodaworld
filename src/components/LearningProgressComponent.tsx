@@ -1,14 +1,21 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getLearningProgress } from '@/api/chat';
 import { useToast } from "@/components/ui/use-toast";
+import { sendChatMessage } from '@/api/chat'; 
 
 const LearningProgressComponent: React.FC<{ studentId: string }> = ({ studentId }) => {
   const [progress, setProgress] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
 
   const fetchProgress = useCallback(async () => {
     setIsLoading(true);
@@ -33,7 +40,7 @@ const LearningProgressComponent: React.FC<{ studentId: string }> = ({ studentId 
 
   useEffect(() => {
     fetchProgress();
-  }, [fetchProgress]);
+  }, [scrollToBottom, fetchProgress]);
 
   return (
     <Card className="p-6 max-w-3xl mx-auto">

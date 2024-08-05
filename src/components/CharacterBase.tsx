@@ -30,7 +30,7 @@ interface CharacterBaseProps {
   children: ReactNode;
   onSendMessage: () => void;
   onStartRecording: () => void;
-  inputMessage: string;
+  input: string;
   setInputMessage: (message: string) => void;
   recordMode: boolean;
   studentId: string;
@@ -47,7 +47,7 @@ export default function CharacterBase({
   children,
   onSendMessage,
   onStartRecording,
-  inputMessage,
+  input,
   setInputMessage,
   recordMode,
   studentId
@@ -123,7 +123,7 @@ export default function CharacterBase({
                     <input
                       type="text"
                       placeholder="Write your message!"
-                      value={inputMessage}
+                      value={input}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {

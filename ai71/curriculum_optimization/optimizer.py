@@ -3,7 +3,7 @@ from ..database import SessionLocal, Curriculum
 import json
 from typing import List, Dict
 from ..ai71_api import AI71API
-from ..database import SessionLocal, Curriculum, PerformanceData, LearningGoal
+from ..database import PerformanceData, LearningGoal
 
 class CurriculumOptimizer:
     def __init__(self):

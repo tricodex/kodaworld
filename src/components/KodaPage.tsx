@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,10 +23,16 @@ const KodaPage: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const { addToast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const character = 'koda';
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   const fetchChatHistory = useCallback(async () => {
     try {
-      const history = await getConversationHistory(studentId);
+      const history = await getConversationHistory(studentId, character);
       setChatHistory(history);
     } catch (error) {
       console.error('Error fetching chat history:', error);
@@ -35,7 +41,7 @@ const KodaPage: React.FC = () => {
         description: "Failed to fetch chat history. Please try again.",
       });
     }
-  }, [studentId, addToast]);
+  }, [studentId, addToast, character]);
 
   useEffect(() => {
     fetchChatHistory();
@@ -43,8 +49,8 @@ const KodaPage: React.FC = () => {
 
   const handlePeerMatching = useCallback(async () => {
     try {
-      const matches = await matchPeers(studentId);
-      setPeerMatches(matches);
+      const matches = await matchPeers([studentId], 2); // Adjusted to use array and specify group size
+      setPeerMatches(matches.flat()); // Flattening the matches array to string[]
       addToast({
         title: "Peer Matching",
         description: "Successfully found peer matches!",
@@ -77,7 +83,7 @@ const KodaPage: React.FC = () => {
 
   const handleGenerateChallenges = useCallback(async () => {
     try {
-      const newChallenges = await generateChallenges(studentId);
+      const newChallenges = await generateChallenges(studentId, {}, {}); // Provide empty objects for progress and achievementSystem
       setChallenges(newChallenges);
       addToast({
         title: "Challenges",
@@ -120,7 +126,7 @@ const KodaPage: React.FC = () => {
     if (!currentMessage.trim()) return;
 
     try {
-      const response = await sendChatMessage('koda', currentMessage, studentId);
+      const response = await sendChatMessage(character, currentMessage, studentId);
       setChatHistory(prev => [...prev, { role: 'user', content: currentMessage }, { role: 'assistant', content: response.response }]);
       setCurrentMessage('');
     } catch (error) {
@@ -130,7 +136,7 @@ const KodaPage: React.FC = () => {
         description: "Failed to send message. Please try again.",
       });
     }
-  }, [currentMessage, studentId, addToast]);
+  }, [currentMessage, studentId, addToast, character]);
 
   return (
     <div className="container mx-auto p-4">

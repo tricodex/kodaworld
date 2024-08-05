@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   GlobalStyle,
   SolarSystemContainer,
@@ -81,16 +81,23 @@ const ScaleModel = () => (
 );
 
 const SpacePage = () => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
   useEffect(() => {
     const svgFilter = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svgFilter.setAttribute("class", "filter");
     svgFilter.innerHTML = '<filter id="blurFilter"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter>';
     document.body.appendChild(svgFilter);
+    
+
 
     return () => {
       document.body.removeChild(svgFilter);
     };
-  }, []);
+  }, [scrollToBottom]);
 
   return (
     <>

@@ -3,7 +3,7 @@
 from ..ai71_api import AI71API
 import json
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 
 from ..models import Environment, Challenge

@@ -1,3 +1,5 @@
+// CurriculumCreator.tsx
+
 'use client';
 
 import React, { useState } from 'react';
@@ -50,32 +52,39 @@ const CurriculumCreator = () => {
     const currentCurriculum = {
       character,
       subject: subject === 'custom' ? customSubject : subject,
-      difficulty,
-      chapters: chapters.filter(chapter => chapter),
+      difficulty: difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
+      units: chapters.filter(chapter => chapter),
     };
+    const performanceDataArray = Object.keys(performanceData).map(chapter => ({
+      chapter,
+      score: performanceData[chapter],
+    }));
+    const learningGoalsArray = learningGoals.filter(goal => goal).map(goal => ({
+      goal,
+    }));
+    
 
     setIsLoading(true);
-  try {
-    const response = await optimizeCurriculum(
-      currentCurriculum,
-      performanceData,
-      learningGoals.filter(goal => goal)
-    );
-    setOptimizedCurriculum(JSON.stringify(response, null, 2));
-    addToast({
-      title: "Success",
-      description: "Curriculum created successfully!",
-    });
-  } catch (error) {
-    console.error('Error creating curriculum:', error);
-    addToast({
-      title: "Error",
-      description: "Failed to create curriculum. Please try again.",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+    try {
+      const response = await optimizeCurriculum(
+        currentCurriculum,
+        performanceDataArray,
+        learningGoalsArray      );
+      setOptimizedCurriculum(JSON.stringify(response, null, 2));
+      addToast({
+        title: "Success",
+        description: "Curriculum created successfully!",
+      });
+    } catch (error) {
+      console.error('Error creating curriculum:', error);
+      addToast({
+        title: "Error",
+        description: "Failed to create curriculum. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const renderTooltip = (content: string) => (
     <TooltipProvider>
@@ -233,4 +242,4 @@ const CurriculumCreator = () => {
   );
 };
 
-export default CurriculumCreator;
+export default CurriculumCreator

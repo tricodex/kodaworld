@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Search } from 'lucide-react';
 import Image from 'next/image';
 import KodaHeader from './KodaHeader';
 import { sendChatMessage } from '@/api/chat';
@@ -13,7 +12,7 @@ import { useRouter } from 'next/router';
 
 export default function GeneralChatPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [input, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,24 +31,33 @@ export default function GeneralChatPage() {
     }
   }, [q]);
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = useCallback(async (message: string) => {
     if (!message.trim()) return;
 
-    const newMessage: ChatMessage = { type: 'user', value: message };
-    setChatMessages(prev => [...prev, newMessage]);
+    const newMessage: ChatMessage = {
+      role: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+    };
+
+    setChatMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage(character as string || 'koda', message);
-      setChatMessages(prev => [...prev, { type: 'assistant', value: response.response }]);
+      const response = await sendChatMessage(character as string, message, 'student_01');
+      setChatMessages((prevMessages) => [...prevMessages, {
+        role: 'assistant',
+        content: response.response,
+        timestamp: new Date().toISOString(),
+      }]);
     } catch (error) {
       console.error('Error sending message:', error);
-      setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
     } finally {
       setIsLoading(false);
+      scrollToBottom();
     }
-  };
+  }, [character]);
 
   const startRecording = () => {
     if (!('webkitSpeechRecognition' in window)) {
@@ -87,7 +95,7 @@ export default function GeneralChatPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full bg-cover bg-center z-0" style={{backgroundImage: "url('/17.png')"}}></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-cover bg-center z-0" style={{ backgroundImage: "url('/17.png')" }}></div>
       <div className="relative z-10">
         <KodaHeader />
         
@@ -99,11 +107,11 @@ export default function GeneralChatPage() {
             </div>
             <div className="h-96 overflow-y-auto mb-4">
               {chatMessages.map((message, index) => (
-                <div key={index} className={`chat-message ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
+                <div key={index} className={`chat-message ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                   <span className={`inline-block p-2 rounded-lg ${
-                    message.type === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                    message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'
                   }`}>
-                    {message.value}
+                    {message.content}
                   </span>
                 </div>
               ))}
@@ -113,13 +121,13 @@ export default function GeneralChatPage() {
             <div className="flex items-center">
               <Input
                 type="text"
-                value={inputMessage}
+                value={input}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputMessage)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(input)}
                 placeholder="Type your message..."
                 className="flex-grow mr-2"
               />
-              <Button onClick={() => handleSendMessage(inputMessage)}>Send</Button>
+              <Button onClick={() => handleSendMessage(input)}>Send</Button>
               <Button onClick={startRecording} className="ml-2">
                 {recordMode ? 'Stop' : 'Record'}
               </Button>

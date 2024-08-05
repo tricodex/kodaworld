@@ -10,14 +10,14 @@ interface ParticlesProps {
   count: number;
   speed: number;
   size: number;
-  color: THREE.ColorRepresentation;
+  color: THREE.Color;
 }
 
 function Particles({ count, speed, size, color }: ParticlesProps) {
-  // The developer uses a more generic type to avoid version conflicts
-  const points = useRef<THREE.Points>(null);
+  const points = useRef<THREE.Points>(null) as React.MutableRefObject<THREE.Points>;
   const mousePosition = useRef([0, 0]);
   const { viewport } = useThree();
+  
 
   const [positions, velocities, originalPositions] = useMemo(() => {
     const positions = new Float32Array(count * 3);
@@ -76,6 +76,7 @@ function Particles({ count, speed, size, color }: ParticlesProps) {
       ];
     }
   }, []);
+  
 
   const handleClick = useCallback(() => {
     if (points.current) {

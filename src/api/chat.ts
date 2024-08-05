@@ -1,5 +1,5 @@
-import { apiRequest } from '@/utils/apiUtils';
-import { ChatMessage, ChatResponse } from '@/types/api';
+import { apiRequest, handleApiError } from '@/utils/apiUtils';
+import { ChatMessage, ChatResponse, CurriculumData, PerformanceData, LearningGoal, Environment, Challenge } from '@/types/api';
 
 const characterPrompts = {
   wake: "You are Wake, the musical whale, a guide through the world of music and sound. Share your knowledge about music theory, instruments, composers, and musical history. Be enthusiastic and encourage musical exploration.",
@@ -9,40 +9,39 @@ const characterPrompts = {
   koda: "You are Koda, a friendly and knowledgeable Koda. You're here to help with any questions across various subjects, encouraging learning and exploration."
 };
 
-export const sendChatMessage = async (character: string, message: string, id: string = "student_01"): Promise<ChatResponse> => {
+export const sendChatMessage = async (character: string, message: string, id: string): Promise<ChatResponse> => {
   try {
-    const response = await apiRequest<ChatResponse>('/api/ai-tutor', {
+    return await apiRequest<ChatResponse>('/api/ai-tutor', {
       method: 'POST',
       body: JSON.stringify({ 
         message, 
         studentId: id, 
         systemPrompt: characterPrompts[character as keyof typeof characterPrompts],
-        character: character  // Add this line to pass the character information
+        character: character
       }),
     });
-    return response;
   } catch (error) {
-    console.error('Error in sendChatMessage:', error);
-    throw new Error('Failed to send chat message');
+    handleApiError(error);
+    throw error;
   }
 };
 
-export const getConversationHistory = async (studentId: string): Promise<ChatMessage[]> => {
+export const getConversationHistory = async (studentId: string, character: string): Promise<ChatMessage[]> => {
   try {
-    const response = await apiRequest<{ history: ChatMessage[] }>(`/api/conversation-history/${studentId}`);
+    const response = await apiRequest<{ history: ChatMessage[] }>(`/api/conversation-history/${studentId}/${character}`);
     return response.history;
   } catch (error) {
-    console.error('Error in getConversationHistory:', error);
-    throw new Error('Failed to fetch conversation history');
+    handleApiError(error);
+    throw error;
   }
 };
 
-export const clearConversationHistory = async (studentId: string): Promise<void> => {
+export const clearConversationHistory = async (studentId: string, character: string): Promise<void> => {
   try {
-    await apiRequest(`/api/clear-history/${studentId}`, { method: 'POST' });
+    await apiRequest(`/api/clear-history/${studentId}/${character}`, { method: 'POST' });
   } catch (error) {
-    console.error('Error in clearConversationHistory:', error);
-    throw new Error('Failed to clear conversation history');
+    handleApiError(error);
+    throw error;
   }
 };
 
@@ -53,8 +52,8 @@ export const collectFeedback = async (studentId: string, feedback: string): Prom
       body: JSON.stringify({ feedback }),
     });
   } catch (error) {
-    console.error('Error in collectFeedback:', error);
-    throw new Error('Failed to collect feedback');
+    handleApiError(error);
+    throw error;
   }
 };
 
@@ -63,8 +62,8 @@ export const getLearningProgress = async (studentId: string): Promise<number> =>
     const response = await apiRequest<{ progress: number }>(`/api/learning-progress/${studentId}`);
     return response.progress;
   } catch (error) {
-    console.error('Error in getLearningProgress:', error);
-    throw new Error('Failed to fetch learning progress');
+    handleApiError(error);
+    throw error;
   }
 };
 
@@ -73,44 +72,44 @@ export const getNextSteps = async (studentId: string): Promise<string[]> => {
     const response = await apiRequest<{ nextSteps: string[] }>(`/api/next-steps/${studentId}`);
     return response.nextSteps;
   } catch (error) {
-    console.error('Error in getNextSteps:', error);
-    throw new Error('Failed to fetch next steps');
+    handleApiError(error);
+    throw error;
   }
 };
 
-export const optimizeCurriculum = async (currentCurriculum: any, performanceData: any, learningGoals: string[]): Promise<any> => {
+export const optimizeCurriculum = async (currentCurriculum: CurriculumData, performanceData: PerformanceData[], learningGoals: LearningGoal[]): Promise<CurriculumData> => {
   try {
-    const response = await apiRequest('/api/optimize-curriculum', {
+    const response = await apiRequest<{ optimizedCurriculum: CurriculumData }>('/api/optimize-curriculum', {
       method: 'POST',
       body: JSON.stringify({ currentCurriculum, performanceData, learningGoals }),
     });
-    return response;
+    return response.optimizedCurriculum;
   } catch (error) {
-    console.error('Error in optimizeCurriculum:', error);
-    throw new Error('Failed to optimize curriculum');
+    handleApiError(error);
+    throw error;
   }
 };
 
-export const getCurriculum = async (curriculumId: string): Promise<any> => {
+export const getCurriculum = async (curriculumId: string): Promise<CurriculumData> => {
   try {
-    const response = await apiRequest<{ curriculum: any }>(`/api/curriculum/${curriculumId}`);
+    const response = await apiRequest<{ curriculum: CurriculumData }>(`/api/curriculum/${curriculumId}`);
     return response.curriculum;
   } catch (error) {
-    console.error('Error in getCurriculum:', error);
-    throw new Error('Failed to fetch curriculum');
+    handleApiError(error);
+    throw error;
   }
 };
 
-export const matchPeers = async (studentId: string): Promise<string[]> => {
+export const matchPeers = async (users: any[], groupSize: number): Promise<string[][]> => {
   try {
-    const response = await apiRequest<{ matches: string[] }>('/api/match-peers', {
+    const response = await apiRequest<{ matches: string[][] }>('/api/match-peers', {
       method: 'POST',
-      body: JSON.stringify({ studentId }),
+      body: JSON.stringify({ users, groupSize }),
     });
     return response.matches;
   } catch (error) {
-    console.error('Error in matchPeers:', error);
-    throw new Error('Failed to find peer matches');
+    handleApiError(error);
+    throw error;
   }
 };
 
@@ -119,33 +118,46 @@ export const getAchievements = async (studentId: string): Promise<string[]> => {
     const response = await apiRequest<{ achievements: string[] }>(`/api/achievements/${studentId}`);
     return response.achievements;
   } catch (error) {
-    console.error('Error in getAchievements:', error);
-    throw new Error('Failed to get achievements');
+    handleApiError(error);
+    throw error;
   }
 };
 
-export const generateChallenges = async (studentId: string): Promise<string[]> => {
+export const generateChallenges = async (studentId: string, progress: { [key: string]: number }, achievementSystem: any): Promise<string[]> => {
   try {
     const response = await apiRequest<{ challenges: string[] }>('/api/generate-challenges', {
       method: 'POST',
-      body: JSON.stringify({ studentId }),
+      body: JSON.stringify({ studentId, progress, achievementSystem }),
     });
     return response.challenges;
   } catch (error) {
-    console.error('Error in generateChallenges:', error);
-    throw new Error('Failed to generate challenges');
+    handleApiError(error);
+    throw error;
   }
 };
 
-export const generateEnvironment = async (topic: string, complexity: string): Promise<string> => {
+export const generateEnvironment = async (topic: string, complexity: string): Promise<Environment> => {
   try {
-    const response = await apiRequest<{ environment: string }>('/api/generate-environment', {
+    const response = await apiRequest<{ environment: Environment }>('/api/generate-environment', {
       method: 'POST',
       body: JSON.stringify({ topic, complexity }),
     });
     return response.environment;
   } catch (error) {
-    console.error('Error in generateEnvironment:', error);
-    throw new Error('Failed to generate environment');
+    handleApiError(error);
+    throw error;
+  }
+};
+
+export const generateChallenge = async (environment: Environment, difficulty: string): Promise<Challenge> => {
+  try {
+    const response = await apiRequest<{ challenge: Challenge }>('/api/generate-challenge', {
+      method: 'POST',
+      body: JSON.stringify({ environment, difficulty }),
+    });
+    return response.challenge;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
   }
 };

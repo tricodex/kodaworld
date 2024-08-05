@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getNextSteps } from '@/api/chat';
@@ -9,6 +9,12 @@ const NextSteps: React.FC<{ studentId: string }> = ({ studentId }) => {
   const [nextSteps, setNextSteps] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
 
   const fetchNextSteps = useCallback(async () => {
     setIsLoading(true);
@@ -29,7 +35,7 @@ const NextSteps: React.FC<{ studentId: string }> = ({ studentId }) => {
 
   useEffect(() => {
     fetchNextSteps();
-  }, [fetchNextSteps]);
+  }, [scrollToBottom, fetchNextSteps]);
 
   return (
     <Card className="p-6 max-w-3xl mx-auto">

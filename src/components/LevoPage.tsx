@@ -31,11 +31,12 @@ declare global {
 export default function LevoPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { 
-      type: 'assistant', 
-      value: "Hello! I'm Levo, the scholarly lion. I'm here to help you explore the fascinating world of science. What would you like to learn about today? We can dive into topics in physics, chemistry, biology, computer science, or any other scientific field you're curious about!" 
+      role: 'assistant', 
+      content: "Hello! I'm Levo, the scholarly lion. I'm here to help you explore the fascinating world of science. What would you like to learn about today? We can dive into topics in physics, chemistry, biology, computer science, or any other scientific field you're curious about!",
+      timestamp: new Date().toISOString(),
     }
   ]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [input, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
   const [currentActivity, setCurrentActivity] = useState<string | null>(null);
@@ -43,6 +44,10 @@ export default function LevoPage() {
   const { addToast } = useToast();
 
   const STUDENT_ID = 'student_01';
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,68 +58,60 @@ export default function LevoPage() {
   }, []);
 
   const handleSendMessage = useCallback(async () => {
-    if (!inputMessage.trim()) return;
+    if (!input.trim()) return;
 
-    const newMessage: ChatMessage = { type: 'user', value: inputMessage };
-    setChatMessages(prev => [...prev, newMessage]);
+    const newMessage: ChatMessage = {
+      role: 'user',
+      content: input,
+      timestamp: new Date().toISOString(),
+    };
+
+    setChatMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage('levo', inputMessage);
-      const formattedResponse = `As Levo, the scholarly lion, I'd like to say: ${response.response}`;
-      setChatMessages(prev => [...prev, { type: 'assistant', value: formattedResponse }]);
+      const response = await sendChatMessage('levo', input, STUDENT_ID);
+      setChatMessages((prevMessages) => [...prevMessages, {
+        role: 'assistant',
+        content: response.response,
+        timestamp: new Date().toISOString(),
+      }]);
     } catch (error) {
       console.error('Error sending message:', error);
-      setChatMessages(prev => [...prev, { 
-        type: 'assistant', 
-        value: "I apologize, but I encountered an error while processing your request. As a scholarly lion, I always strive for accuracy. Could you please try asking your question again?" 
-      }]);
       addToast({
         title: "Error",
         description: "Failed to send message. Please try again.",
       });
     } finally {
       setIsLoading(false);
+      scrollToBottom();
     }
-  }, [inputMessage, addToast]);
+  }, [input, STUDENT_ID, addToast, scrollToBottom]);
 
-  const startRecording = useCallback(() => {
-    if (!('webkitSpeechRecognition' in window)) {
+  const startRecording = () => {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.start();
+    setRecordMode(true);
+
+    recognition.onend = function () {
+      setRecordMode(false);
+    };
+
+    recognition.onresult = function (event: any) {
+      const transcript = event.results[0][0].transcript;
+      setInputMessage(transcript);
+    };
+
+    recognition.onerror = function (event: any) {
+      console.error(event);
       addToast({
-        title: "Speech Recognition Unavailable",
-        description: "Your browser does not support speech recognition. Please use Google Chrome.",
+        title: "Speech Recognition Error",
+        description: "An error occurred during speech recognition. Please try again.",
       });
-    } else {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-      recognition.start();
-
-      recognition.onstart = function () {
-        setRecordMode(true);
-      };
-
-      recognition.onend = function () {
-        setRecordMode(false);
-      };
-
-      recognition.onresult = function (event: any) {
-        const transcript = event.results[0][0].transcript;
-        setInputMessage(transcript);
-      };
-
-      recognition.onerror = function (event: any) {
-        console.error(event);
-        addToast({
-          title: "Speech Recognition Error",
-          description: "An error occurred during speech recognition. Please try again.",
-        });
-      };
-    }
-  }, [addToast]);
+    };
+  };
 
   const toggleActivity = useCallback((activity: string | null) => {
     setCurrentActivity(activity);
@@ -135,7 +132,7 @@ export default function LevoPage() {
       default:
         return null;
     }
-  }, [currentActivity]);
+  }, [currentActivity, STUDENT_ID]);
 
   return (
     <div className="relative min-h-screen">
@@ -148,27 +145,27 @@ export default function LevoPage() {
         progressTitle="Scientific Achievements"
         onSendMessage={handleSendMessage}
         onStartRecording={startRecording}
-        inputMessage={inputMessage}
+        input={input}
         setInputMessage={setInputMessage}
         recordMode={recordMode}
         studentId={STUDENT_ID}
       >
         {chatMessages.map((message, index) => (
-          <div key={index} className={`chat-message ${message.type === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
-            <div className={`flex items-end ${message.type === 'assistant' ? '' : 'flex-row-reverse'}`}>
+          <div key={index} className={`chat-message ${message.role === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
+            <div className={`flex items-end ${message.role === 'assistant' ? '' : 'flex-row-reverse'}`}>
               <Image
-                src={message.type === 'assistant' ? "/animals/levo.png" : "/student_01.png"}
-                alt={message.type === 'assistant' ? "Levo" : "User"}
+                src={message.role === 'assistant' ? "/animals/levo.png" : "/student_01.png"}
+                alt={message.role === 'assistant' ? "Levo" : "User"}
                 width={24}
                 height={24}
                 className="rounded-full"
               />
-              <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.type === 'assistant' ? 'items-start' : 'items-end'}`}>
+              <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.role === 'assistant' ? 'items-start' : 'items-end'}`}>
                 <div>
                   <span className={`px-4 py-2 rounded-lg inline-block ${
-                    message.type === 'assistant' ? 'rounded-bl-none bg-gray-300 text-gray-600' : 'rounded-br-none bg-blue-600 text-white'
+                    message.role === 'assistant' ? 'rounded-bl-none bg-gray-300 text-gray-600' : 'rounded-br-none bg-blue-600 text-white'
                   }`}>
-                    {message.value}
+                    {message.content}
                   </span>
                 </div>
               </div>

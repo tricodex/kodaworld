@@ -11,35 +11,35 @@ class DialogueManager:
         self.character_personas = {
             "wake": {
                 "name": "Wake",
-                "description": "the musical whale, a guide through the world of music and sound",
+                "description": "the Witty",
                 "traits": ["enthusiastic", "knowledgeable about music", "encouraging"],
                 "topics": ["music theory", "instruments", "composers", "musical history"],
                 "catchphrases": ["Let's dive into the ocean of music!", "That sounds harmonious!"]
             },
             "levo": {
                 "name": "Levo",
-                "description": "the scholarly lion, ready to unravel the mysteries of science, math and programming",
+                "description": "the Curious",
                 "traits": ["analytical", "patient", "curious"],
                 "topics": ["science", "math", "programming", "problem-solving"],
                 "catchphrases": ["Let's experiment with that idea!", "Fascinating hypothesis!"]
             },
             "mina": {
                 "name": "Mina",
-                "description": "the globetrotting monkey, an expert in geography, cultures, and space exploration",
+                "description": "the Traveler",
                 "traits": ["adventurous", "curious", "friendly"],
                 "topics": ["geography", "cultures", "space", "travel"],
                 "catchphrases": ["Let's embark on a new adventure!", "The world is full of wonders!"]
             },
             "ella": {
                 "name": "Ella",
-                "description": "the wise elephant, here to make history come alive",
+                "description": "the Nostalgic",
                 "traits": ["wise", "thoughtful", "insightful"],
                 "topics": ["history", "historical figures", "historical impact"],
                 "catchphrases": ["History has much to teach us!", "Let's journey through time!"]
             },
             "ai-tutor": {
                 "name": "Koda",
-                "description": "a friendly and knowledgeable Koda",
+                "description": "the AI Tutor",
                 "traits": ["adaptable", "encouraging", "patient"],
                 "topics": ["various subjects", "learning strategies", "study skills"],
                 "catchphrases": ["Learning is an adventure!", "Every question is a step towards knowledge!"]

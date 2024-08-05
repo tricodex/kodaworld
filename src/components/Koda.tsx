@@ -28,12 +28,12 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  useEffect(scrollToBottom, [messages]);
+  useEffect(scrollToBottom, [messages, scrollToBottom]);
 
   const fetchConversationHistory = useCallback(async () => {
     setIsFetching(true);
     try {
-      const history = await getConversationHistory(studentId);
+      const history = await getConversationHistory(studentId, character);
       setMessages(history);
     } catch (error) {
       console.error('Error fetching conversation history:', error);
@@ -44,7 +44,7 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
     } finally {
       setIsFetching(false);
     }
-  }, [studentId, addToast]);
+  }, [studentId, character, addToast]);
 
   useEffect(() => {
     fetchConversationHistory();
@@ -53,28 +53,38 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
-    const newMessage: ChatMessage = { type: 'user', value: input };
-    setMessages(prevMessages => [...prevMessages, newMessage]);
+    const newMessage: ChatMessage = {
+      role: 'user',
+      content: input,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
       const response = await sendChatMessage(character, input, studentId);
-      setMessages(prevMessages => [...prevMessages, { type: 'assistant', value: response.response }]);
+      setMessages((prevMessages) => [...prevMessages, {
+        role: 'assistant',
+        content: response.response,
+        timestamp: new Date().toISOString(),
+      }]);
     } catch (error) {
       console.error('Error sending message:', error);
       addToast({
         title: "Error",
-        description: "Failed to get a response. Please try again.",
+        description: "Failed to send message. Please try again.",
       });
     } finally {
       setIsLoading(false);
+      scrollToBottom();
     }
   };
 
   const handleClearHistory = async () => {
     try {
-      await clearConversationHistory(studentId);
+      await clearConversationHistory(studentId, character);
       setMessages([]);
       addToast({
         title: "Success",
@@ -112,20 +122,20 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-2`}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-2`}
               >
-                <div className={`flex items-end ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-end ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <Image
-                    src={message.type === 'user' ? '/student_01.png' : '/koda_logo128.png'}
-                    alt={message.type === 'user' ? 'User' : 'Koda'}
+                    src={message.role === 'user' ? '/student_01.png' : '/koda_logo128.png'}
+                    alt={message.role === 'user' ? 'User' : 'Koda'}
                     width={24}
                     height={24}
                     className="rounded-full"
                   />
                   <span className={`inline-block p-2 rounded-lg mx-2 ${
-                    message.type === 'user' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                    message.role === 'user' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
                   }`}>
-                    {message.value}
+                    {message.content}
                   </span>
                 </div>
               </motion.div>
