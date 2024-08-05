@@ -55,12 +55,20 @@ class DialogueManager:
         logger.addHandler(handler)
         return logger
     
+    # def _generate_character_response(self, character: str, content: str) -> str:
+    #     persona = self.character_personas.get(character, self.character_personas["ai-tutor"])
+    #     response = f"{persona['name']} the {persona['description']} says: {content}"
+    #     if random.random() < 0.3:  # 30% chance to add a catchphrase
+    #         response += f" {random.choice(persona['catchphrases'])}"
+    #     return response
+    
     def _generate_character_response(self, character: str, content: str) -> str:
         persona = self.character_personas.get(character, self.character_personas["ai-tutor"])
-        response = f"{persona['name']} the {persona['description']} says: {content}"
-        if random.random() < 0.3:  # 30% chance to add a catchphrase
+        response = f"{content}" # Removed persona['name'] and persona['description']
+        if random.random() < 0.1:  # 10% chance to add a catchphrase
             response += f" {random.choice(persona['catchphrases'])}"
         return response
+
 
     async def process_ai_response(self, response: str, student_id: str, character: str):
         character_response = self._generate_character_response(character, response)
