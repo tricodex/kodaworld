@@ -1,21 +1,45 @@
+'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import Koda from '@/components/Koda';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Label from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { matchPeers, getAchievements, generateChallenges, generateEnvironment } from '@/api/chat';
+import { Avatar } from "@/components/ui/avatar";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { matchPeers, getAchievements, generateChallenges, generateEnvironment, getConversationHistory, sendChatMessage } from '@/api/chat';
+import KodaHeader from './KodaHeader';
+import Image from 'next/image';
 
 const KodaPage: React.FC = () => {
   const [studentId, setStudentId] = useState('student_01');
   const [peerMatches, setPeerMatches] = useState<string[]>([]);
   const [achievements, setAchievements] = useState<string[]>([]);
   const [challenges, setChallenges] = useState<string[]>([]);
-  const [environment, setEnvironment] = useState<string>('');
+  const [environment, setEnvironment] = useState<any>(null);
   const [topic, setTopic] = useState('');
   const [complexity, setComplexity] = useState('intermediate');
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [currentMessage, setCurrentMessage] = useState('');
   const { addToast } = useToast();
+
+  const fetchChatHistory = useCallback(async () => {
+    try {
+      const history = await getConversationHistory(studentId);
+      setChatHistory(history);
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      addToast({
+        title: "Error",
+        description: "Failed to fetch chat history. Please try again.",
+      });
+    }
+  }, [studentId, addToast]);
+
+  useEffect(() => {
+    fetchChatHistory();
+  }, [fetchChatHistory]);
 
   const handlePeerMatching = useCallback(async () => {
     try {
@@ -92,17 +116,61 @@ const KodaPage: React.FC = () => {
     }
   }, [topic, complexity, addToast]);
 
+  const handleSendMessage = useCallback(async () => {
+    if (!currentMessage.trim()) return;
+
+    try {
+      const response = await sendChatMessage('koda', currentMessage, studentId);
+      setChatHistory(prev => [...prev, { role: 'user', content: currentMessage }, { role: 'assistant', content: response.response }]);
+      setCurrentMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      addToast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+      });
+    }
+  }, [currentMessage, studentId, addToast]);
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Welcome to KodaWorld</h1>
+      <KodaHeader />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="col-span-2">
           <CardHeader>
             <CardTitle>Chat with Koda</CardTitle>
           </CardHeader>
           <CardContent>
-            <Koda studentId={studentId} />
+            <div className="h-96 overflow-y-auto mb-4 p-4 border rounded">
+              {chatHistory.map((message, index) => (
+                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
+                  <div className={`flex items-end ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <Avatar className="w-8 h-8">
+                      <Image
+                        src={message.role === 'user' ? '/student_01.png' : '/koda_logo123.png'}
+                        alt={message.role === 'user' ? 'User' : 'Koda'}
+                        width={32}
+                        height={32}
+                      />
+                    </Avatar>
+                    <div className={`max-w-xs mx-2 p-2 rounded ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
+                      {message.content}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex">
+              <Input
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Type your message..."
+                className="flex-grow mr-2"
+              />
+              <Button onClick={handleSendMessage}>Send</Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -115,7 +183,7 @@ const KodaPage: React.FC = () => {
             {peerMatches.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold">Your Matches:</h3>
-                <ul>
+                <ul className="list-disc pl-5 mt-2">
                   {peerMatches.map((match, index) => (
                     <li key={index}>{match}</li>
                   ))}
@@ -135,7 +203,7 @@ const KodaPage: React.FC = () => {
             {achievements.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold">Your Achievements:</h3>
-                <ul>
+                <ul className="list-disc pl-5 mt-2">
                   {achievements.map((achievement, index) => (
                     <li key={index}>{achievement}</li>
                   ))}
@@ -145,7 +213,7 @@ const KodaPage: React.FC = () => {
             {challenges.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold">Your Challenges:</h3>
-                <ul>
+                <ul className="list-disc pl-5 mt-2">
                   {challenges.map((challenge, index) => (
                     <li key={index}>{challenge}</li>
                   ))}
@@ -171,23 +239,28 @@ const KodaPage: React.FC = () => {
             </div>
             <div className="space-y-2 mt-2">
               <Label htmlFor="complexity">Complexity</Label>
-              <select
-                id="complexity"
-                value={complexity}
-                onChange={(e) => setComplexity(e.target.value)}
-                className="w-full p-2 border rounded"
-                title="Complexity"
-              >
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
-              </select>
+              <Select value={complexity} onValueChange={setComplexity}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select complexity" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button onClick={handleGenerateEnvironment} className="mt-4">Generate Environment</Button>
             {environment && (
               <div className="mt-4">
                 <h3 className="font-semibold">Generated Environment:</h3>
-                <p>{environment}</p>
+                <p>{environment.description}</p>
+                <h4 className="font-semibold mt-2">Interactive Elements:</h4>
+                <ul className="list-disc pl-5">
+                  {environment.interactive_elements.map((element: string, index: number) => (
+                    <li key={index}>{element}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </CardContent>

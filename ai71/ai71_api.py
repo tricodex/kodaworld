@@ -1,9 +1,11 @@
+# ai71/ai71_api.py
+
 import os
-import requests
+import aiohttp
+import asyncio
 import logging
-import time
-from typing import List, Dict, Any, Optional, Union, Generator
 import json
+from typing import List, Dict, Any, Optional, Union
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 
@@ -17,53 +19,56 @@ class AI71API:
             raise ValueError("AI71_API_KEY not found. Please set it as an environment variable.")
         
         self.base_url = base_url
-        self.session = requests.Session()
-        self.session.headers.update({
+        self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
-        })
+        }
         self.memory = ConversationBufferMemory(return_messages=True)
 
-    def _make_request(self, endpoint: str, payload: Dict[str, Any], stream: bool = False, max_retries: int = 3) -> Union[Dict[str, Any], requests.Response]:
+    async def _make_request(self, endpoint: str, payload: Dict[str, Any], stream: bool = False, max_retries: int = 3) -> Union[Dict[str, Any], aiohttp.ClientResponse]:
         url = f"{self.base_url}/{endpoint}"
         for attempt in range(max_retries):
             try:
-                response = self.session.post(url, json=payload, stream=stream)
-                response.raise_for_status()
-                return response if stream else response.json()
-            except requests.RequestException as e:
+                async with aiohttp.ClientSession(headers=self.headers) as session:
+                    async with session.post(url, json=payload) as response:
+                        response.raise_for_status()
+                        if stream:
+                            return response
+                        else:
+                            return await response.json()
+            except aiohttp.ClientError as e:
                 logger.error(f"Attempt {attempt + 1} failed: Error making request to {endpoint}: {str(e)}")
                 if attempt == max_retries - 1:
                     raise
-                time.sleep(2 ** attempt)  # Exponential backoff
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
-    def chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-11b", **kwargs) -> Dict[str, Any]: #180b or 11b
+    async def chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-11b", **kwargs) -> Dict[str, Any]:
         payload = {
             "model": model,
             "messages": messages,
             **kwargs
         }
-        response = self._make_request("chat/completions", payload)
-        self._update_memory(messages, response['choices'][0]['message']['content'])
+        response = await self._make_request("chat/completions", payload)
+        await self._update_memory(messages, response['choices'][0]['message']['content'])
         return response
 
-    def stream_chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-11b   ", **kwargs) -> Generator[Dict[str, Any], None, None]: #180b or 11b
+    async def stream_chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-11b", **kwargs):
         payload = {
             "model": model,
             "messages": messages,
             "stream": True,
             **kwargs
         }
-        response = self._make_request("chat/completions", payload, stream=True)
+        response = await self._make_request("chat/completions", payload, stream=True)
         full_response = ""
-        for line in response.iter_lines():
+        async for line in response.content:
             if line:
                 chunk = json.loads(line.decode('utf-8').split('data: ')[1])
                 full_response += chunk['choices'][0]['delta'].get('content', '')
                 yield chunk
-        self._update_memory(messages, full_response)
+        await self._update_memory(messages, full_response)
 
-    def _update_memory(self, messages: List[Dict[str, str]], response: str):
+    async def _update_memory(self, messages: List[Dict[str, str]], response: str):
         for message in messages:
             if message['role'] == 'user':
                 self.memory.chat_memory.add_user_message(message['content'])
@@ -74,10 +79,10 @@ class AI71API:
     def get_conversation_history(self) -> List[Union[HumanMessage, AIMessage, SystemMessage]]:
         return self.memory.chat_memory.messages
 
-    def clear_memory(self):
+    async def clear_memory(self):
         self.memory.clear()
 
-    def generate_with_memory(self, user_input: str, model: str = "falcon-180b", messages: List[Dict[str, str]] = None, **kwargs) -> str:
+    async def generate_with_memory(self, user_input: str, model: str = "falcon-180b", messages: List[Dict[str, str]] = None, **kwargs) -> str:
         if messages is None:
             messages = self.get_conversation_history()
             messages.append(HumanMessage(content=user_input))
@@ -85,7 +90,7 @@ class AI71API:
         else:
             messages.append({"role": "user", "content": user_input})
         
-        response = self.chat_completion(messages, model=model, **kwargs)
+        response = await self.chat_completion(messages, model=model, **kwargs)
         return response['choices'][0]['message']['content']
 
     def add_system_message(self, content: str):

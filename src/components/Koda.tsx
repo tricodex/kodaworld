@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 import { sendChatMessage, getConversationHistory, clearConversationHistory } from '@/api/chat';
 import { ChatMessage } from '@/types/api';
 import { AnimatePresence, motion } from 'framer-motion';
+import Image from 'next/image';
 
 interface KodaProps {
   studentId: string;
@@ -27,7 +28,7 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  useEffect(scrollToBottom, [messages, scrollToBottom]);
+  useEffect(scrollToBottom, [messages]);
 
   const fetchConversationHistory = useCallback(async () => {
     setIsFetching(true);
@@ -111,13 +112,22 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className={`chat-message ${message.type === 'user' ? 'text-right' : 'text-left'} mb-2`}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-2`}
               >
-                <span className={`inline-block p-2 rounded-lg ${
-                  message.type === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
-                }`}>
-                  {message.value}
-                </span>
+                <div className={`flex items-end ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <Image
+                    src={message.type === 'user' ? '/student_01.png' : '/koda_logo128.png'}
+                    alt={message.type === 'user' ? 'User' : 'Koda'}
+                    width={24}
+                    height={24}
+                    className="rounded-full"
+                  />
+                  <span className={`inline-block p-2 rounded-lg mx-2 ${
+                    message.type === 'user' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                  }`}>
+                    {message.value}
+                  </span>
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>
@@ -127,9 +137,16 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="text-center text-gray-500 mt-2"
+            className="flex justify-start items-center text-gray-500 mt-2"
           >
-            Thinking<span className="animate-pulse">...</span>
+            <Image
+              src="/koda_logo128.png"
+              alt="Koda"
+              width={24}
+              height={24}
+              className="rounded-full mr-2"
+            />
+            <span>Thinking<span className="animate-pulse">...</span></span>
           </motion.div>
         )}
         <div ref={messagesEndRef} />

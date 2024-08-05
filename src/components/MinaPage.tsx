@@ -11,8 +11,8 @@ import CountryGame from './MinaAct/CountryGame';
 import Koda from '@/components/Koda';
 import { sendChatMessage, getConversationHistory } from '@/api/chat';
 import { ChatMessage } from '@/types/api';
+import { useToast } from "@/components/ui/use-toast";
 
-// Define activities
 const activities = [
   { name: "Koda", key: "Koda" },
   { name: "World Map Quiz", key: "WorldMapQuiz" },
@@ -29,14 +29,19 @@ declare global {
 }
 
 export default function MinaPage() {
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      type: 'assistant',
+      value: "Hello there! I'm Mina, your globetrotting monkey guide to geography and world cultures. Ready to explore the wonders of our planet? Whether you want to learn about distant lands, diverse cultures, or the Earth's amazing features, I'm here to help. What would you like to discover today?"
+    }
+  ]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
   const [currentActivity, setCurrentActivity] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { addToast } = useToast();
 
-  // Use a constant for the student ID
   const STUDENT_ID = 'student_01';
 
   const scrollToBottom = useCallback(() => {
@@ -45,27 +50,24 @@ export default function MinaPage() {
 
   useEffect(scrollToBottom, [chatMessages]);
 
-  // Fetch conversation history when the component mounts
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         const history = await getConversationHistory(STUDENT_ID);
-        if (history.length === 0) {
-          // If there's no history, get an initial greeting from Mina
-          const response = await sendChatMessage('mina', 'Greet the user and introduce yourself');
-          setChatMessages([{ type: 'assistant', value: response.response }]);
-        } else {
+        if (history.length > 0) {
           setChatMessages(history);
         }
       } catch (error) {
         console.error('Error fetching conversation history:', error);
-      } finally {
-        setIsLoading(false);
+        addToast({
+          title: "Error",
+          description: "Failed to load chat history. Starting a new conversation.",
+        });
       }
     };
 
     fetchHistory();
-  }, []);
+  }, [addToast]);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim()) return;
@@ -81,14 +83,21 @@ export default function MinaPage() {
     } catch (error) {
       console.error('Error sending message:', error);
       setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
+      addToast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [inputMessage]);
+  }, [inputMessage, addToast]);
 
   const startRecording = useCallback(() => {
     if (!('webkitSpeechRecognition' in window)) {
-      alert('Your browser does not support speech recognition. Please use Google Chrome.');
+      addToast({
+        title: "Speech Recognition Unavailable",
+        description: "Your browser does not support speech recognition. Please use Google Chrome.",
+      });
     } else {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
@@ -112,9 +121,13 @@ export default function MinaPage() {
 
       recognition.onerror = function (event: any) {
         console.error(event);
+        addToast({
+          title: "Speech Recognition Error",
+          description: "An error occurred during speech recognition. Please try again.",
+        });
       };
     }
-  }, []);
+  }, [addToast]);
 
   const toggleActivity = useCallback((activity: string | null) => {
     setCurrentActivity(activity);
@@ -135,7 +148,7 @@ export default function MinaPage() {
       default:
         return null;
     }
-  }, [currentActivity, STUDENT_ID]);
+  }, [currentActivity]);
 
   return (
     <div className="relative min-h-screen">
@@ -157,7 +170,7 @@ export default function MinaPage() {
           <div key={index} className={`chat-message ${message.type === 'user' ? 'flex justify-end' : 'flex justify-start'}`}>
             <div className={`flex items-end ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
               <Image
-                src={message.type === 'user' ? '/animals/ella.png' : '/animals/mina.png'}
+                src={message.type === 'user' ? '/student_01.png' : '/animals/mina.png'}
                 alt={message.type === 'user' ? 'User' : 'Mina'}
                 width={24}
                 height={24}
@@ -207,8 +220,6 @@ export default function MinaPage() {
           {renderActivity()}
         </ActivityLayout>
       )}
-
-      
     </div>
   );
 }

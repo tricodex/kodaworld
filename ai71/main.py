@@ -5,14 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
+import logging
+import json
 from .dialogue_management.manager import DialogueManager
 from .ai71_api import AI71API
 from .database import SessionLocal, init_db, Curriculum
 from .gamification.system import GamificationSystem
 from .peer_matching.matcher import PeerMatcher
 from .academica.environment_generator import Academica
-import logging
-import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ async def get_conversation_history(student_id: str):
 @app.post("/api/clear-history/{student_id}")
 async def clear_conversation_history(student_id: str):
     await dialogue_manager.clear_history(student_id)
-    ai71_api.clear_memory()
+    await ai71_api.clear_memory()
     return {"message": "Conversation history cleared successfully"}
 
 @app.post("/api/collect-feedback/{student_id}")

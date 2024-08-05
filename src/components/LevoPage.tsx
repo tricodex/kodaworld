@@ -13,7 +13,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { sendChatMessage } from '@/api/chat';
 import { ChatMessage } from '@/types/api';
 
-// Define activities available for Levo
 const activities = [
   { name: "Koda", key: "Koda" },
   { name: "Particle Game", key: "ParticleGame" },
@@ -22,7 +21,6 @@ const activities = [
   { name: "Numbers Game", key: "NumbersGame" },
 ];
 
-// Declare global types for speech recognition
 declare global {
   interface Window {
     webkitSpeechRecognition: any;
@@ -46,12 +44,10 @@ export default function LevoPage() {
 
   const STUDENT_ID = 'student_01';
 
-  // Scroll to bottom of chat when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Prevent unwanted scrolling when the page loads
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -154,49 +150,49 @@ export default function LevoPage() {
         studentId={STUDENT_ID}
       >
         {chatMessages.map((message, index) => (
-          <div key={index} className={`chat-message ${message.type === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
-            <div className={`flex items-end ${message.type === 'assistant' ? '' : 'flex-row-reverse'}`}>
-              <Image
-                src={message.type === 'assistant' ? "/animals/levo.png" : "/animals/mina.png"}
-                alt={message.type === 'assistant' ? "Levo" : "User"}
-                width={24}
-                height={24}
-                className="rounded-full"
-              />
-              <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.type === 'assistant' ? 'items-start' : 'items-end'}`}>
-                <div>
-                  <span className={`px-4 py-2 rounded-lg inline-block ${
-                    message.type === 'assistant' ? 'rounded-bl-none bg-gray-300 text-gray-600' : 'rounded-br-none bg-blue-600 text-white'
-                  }`}>
-                    {message.value}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div className="chat-message flex justify-start">
-            <div className="flex items-end">
-              <Image
-                src="/animals/levo.png"
-                alt="Levo"
-                width={24}
-                height={24}
-                className="rounded-full"
-              />
-              <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 items-start">
-                <div>
-                  <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600 relative">
-                    Typing...
-                    <span className="animate-ping absolute top-0 right-0 inline-flex w-2 h-2 rounded-full bg-orange-500 opacity-75"></span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+  <div key={index} className={`chat-message ${message.type === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
+    <div className={`flex items-end ${message.type === 'assistant' ? '' : 'flex-row-reverse'}`}>
+      <Image
+        src={message.type === 'assistant' ? "/animals/levo.png" : "/animals/mina.png"}
+        alt={message.type === 'assistant' ? "Levo" : "User"}
+        width={24}
+        height={24}
+        className="rounded-full"
+      />
+      <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.type === 'assistant' ? 'items-start' : 'items-end'}`}>
+        <div>
+          <span className={`px-4 py-2 rounded-lg inline-block ${
+            message.type === 'assistant' ? 'rounded-bl-none bg-gray-300 text-gray-600' : 'rounded-br-none bg-blue-600 text-white'
+          }`}>
+            {message.value}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+))}
+{isLoading && (
+  <div className="chat-message flex justify-start">
+    <div className="flex items-end">
+      <Image
+        src="/animals/levo.png"
+        alt="Levo"
+        width={24}
+        height={24}
+        className="rounded-full"
+      />
+      <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 items-start">
+        <div>
+          <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600 relative">
+            Typing...
+            <span className="animate-ping absolute top-0 right-0 inline-flex w-2 h-2 rounded-full bg-orange-500 opacity-75"></span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+<div ref={messagesEndRef} />
       </CharacterBase>
       
       {currentActivity && (

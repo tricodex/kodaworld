@@ -1,142 +1,129 @@
 import React, { useRef, useEffect, useState } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { motion, useAnimation } from 'framer-motion';
+
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  element: string;
+}
+
+const elements = ['H', 'O', 'C', 'N', 'Na', 'Cl'];
+const colors = {
+  H: '#FFFFFF',
+  O: '#FF0000',
+  C: '#00FF00',
+  N: '#0000FF',
+  Na: '#FFA500',
+  Cl: '#00FFFF',
+};
 
 const ChemistryLabSim: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [particles, setParticles] = useState<Particle[]>([]);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number>();
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const initialParticles = Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      element: elements[Math.floor(Math.random() * elements.length)],
+    }));
+    setParticles(initialParticles);
 
-    // Scene setup
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    const currentContainer = containerRef.current;
-    currentContainer.appendChild(renderer.domElement);
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 1);
-    pointLight.position.set(10, 10, 10);
-    scene.add(pointLight);
-
-    // Post-processing
-    const composer = new EffectComposer(renderer);
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    composer.addPass(bloomPass);
-
-    // OrbitControls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-
-    // Chemistry elements
-    const elements = ['H', 'O', 'C', 'N', 'Na', 'Cl'];
-    const elementMeshes: THREE.Mesh[] = [];
-
-    elements.forEach((element, index) => {
-      const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-      const material = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(Math.random(), Math.random(), Math.random()),
-        emissive: new THREE.Color(0.2, 0.2, 0.2),
-        metalness: 0.3,
-        roughness: 0.4,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set((index % 3) * 2 - 2, Math.floor(index / 3) * 2 - 1, 0);
-      mesh.userData.element = element;
-      scene.add(mesh);
-      elementMeshes.push(mesh);
-    });
-
-    // Beaker
-    const beakerGeometry = new THREE.CylinderGeometry(1, 1, 3, 32, 1, true);
-    const beakerMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.3,
-      roughness: 0,
-      metalness: 0,
-      clearcoat: 1,
-      clearcoatRoughness: 0,
-    });
-    const beaker = new THREE.Mesh(beakerGeometry, beakerMaterial);
-    beaker.position.set(4, 0, 0);
-    scene.add(beaker);
-
-    // Liquid in beaker
-    const liquidGeometry = new THREE.CylinderGeometry(0.9, 0.9, 0.1, 32);
-    const liquidMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x00ff00,
-      transparent: true,
-      opacity: 0.7,
-      roughness: 0.2,
-      metalness: 0,
-    });
-    const liquid = new THREE.Mesh(liquidGeometry, liquidMaterial);
-    liquid.position.set(4, -1.4, 0);
-    scene.add(liquid);
-
-    camera.position.z = 10;
-
-    // Animation
     const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      elementMeshes.forEach((mesh) => {
-        mesh.rotation.x += 0.01;
-        mesh.rotation.y += 0.01;
-      });
-      composer.render();
+      setParticles((prevParticles) =>
+        prevParticles.map((particle) => {
+          let { x, y, vx, vy } = particle;
+          x += vx;
+          y += vy;
+
+          if (x < 0 || x > 100) vx = -vx;
+          if (y < 0 || y > 100) vy = -vy;
+
+          return { ...particle, x, y, vx, vy };
+        })
+      );
+      animationRef.current = requestAnimationFrame(animate);
     };
 
     animate();
 
-    // Raycaster for element selection
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const onMouseMove = (event: MouseEvent) => {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(elementMeshes);
-
-      if (intersects.length > 0) {
-        const element = intersects[0].object.userData.element;
-        setSelectedElement(element);
-      } else {
-        setSelectedElement(null);
-      }
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-
-    // Clean up
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      if (currentContainer) {
-        currentContainer.removeChild(renderer.domElement);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
       }
     };
   }, []);
 
+  const handleParticleClick = (element: string) => {
+    setSelectedElement(element);
+  };
+
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    if (selectedElement) {
+      setParticles((prevParticles) => [
+        ...prevParticles,
+        {
+          id: Date.now(),
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          element: selectedElement,
+        },
+      ]);
+      setSelectedElement(null);
+    }
+  };
+
   return (
-    <div className="relative w-full h-screen">
-      <div ref={containerRef} className="w-full h-full" />
-      {selectedElement && (
-        <div className="absolute top-4 left-4 bg-white bg-opacity-80 p-2 rounded">
-          Selected Element: {selectedElement}
+    <div className="relative w-full h-screen bg-gray-100" ref={containerRef} onClick={handleContainerClick}>
+      {particles.map((particle) => (
+        <motion.div
+          key={particle.id}
+          className="absolute w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
+          style={{
+            backgroundColor: colors[particle.element as keyof typeof colors],
+            x: `${particle.x}%`,
+            y: `${particle.y}%`,
+          }}
+          animate={{ x: `${particle.x}%`, y: `${particle.y}%` }}
+          transition={{ type: 'tween', duration: 0.1 }}
+          onClick={() => handleParticleClick(particle.element)}
+        >
+          {particle.element}
+        </motion.div>
+      ))}
+      <div className="absolute top-4 left-4 bg-white p-2 rounded shadow">
+        <h2 className="text-lg font-bold mb-2">Chemistry Lab</h2>
+        <p>Click on an element to select it, then click anywhere to add it to the simulation.</p>
+        <div className="mt-2">
+          {elements.map((element) => (
+            <button
+              key={element}
+              className={`mr-2 mb-2 px-2 py-1 rounded ${
+                selectedElement === element ? 'bg-blue-500 text-white' : 'bg-gray-200'
+              }`}
+              onClick={() => setSelectedElement(element)}
+            >
+              {element}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };
