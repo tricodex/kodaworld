@@ -32,7 +32,7 @@ export default function LevoPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { 
       type: 'assistant', 
-      value: "Hello! I'm Levo, your science tutor. What would you like to learn about today? We can explore topics in computers, physics, chemistry, biology, robots or any other scientific field you're interested in!" 
+      value: "Hello! I'm Levo, the scholarly lion. I'm here to help you explore the fascinating world of science. What would you like to learn about today? We can dive into topics in physics, chemistry, biology, computer science, or any other scientific field you're curious about!" 
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -62,10 +62,14 @@ export default function LevoPage() {
 
     try {
       const response = await sendChatMessage('levo', inputMessage);
-      setChatMessages(prev => [...prev, { type: 'assistant', value: response.response }]);
+      const formattedResponse = `As Levo, the scholarly lion, I'd like to say: ${response.response}`;
+      setChatMessages(prev => [...prev, { type: 'assistant', value: formattedResponse }]);
     } catch (error) {
       console.error('Error sending message:', error);
-      setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
+      setChatMessages(prev => [...prev, { 
+        type: 'assistant', 
+        value: "I apologize, but I encountered an error while processing your request. As a scholarly lion, I always strive for accuracy. Could you please try asking your question again?" 
+      }]);
       addToast({
         title: "Error",
         description: "Failed to send message. Please try again.",
@@ -139,7 +143,7 @@ export default function LevoPage() {
         backgroundImage="/backgrounds/levo-bg.webp"
         characterName="Levo"
         subject="Science"
-        chatDescription="Chat with Levo about scientific concepts and experiments."
+        chatDescription="Chat with Levo, the scholarly lion, about scientific concepts and experiments."
         activities={activities.map(activity => ({ name: activity.name, action: () => toggleActivity(activity.key) }))}
         progressTitle="Scientific Achievements"
         onSendMessage={handleSendMessage}
@@ -150,49 +154,49 @@ export default function LevoPage() {
         studentId={STUDENT_ID}
       >
         {chatMessages.map((message, index) => (
-  <div key={index} className={`chat-message ${message.type === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
-    <div className={`flex items-end ${message.type === 'assistant' ? '' : 'flex-row-reverse'}`}>
-      <Image
-        src={message.type === 'assistant' ? "/animals/levo.png" : "/animals/mina.png"}
-        alt={message.type === 'assistant' ? "Levo" : "User"}
-        width={24}
-        height={24}
-        className="rounded-full"
-      />
-      <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.type === 'assistant' ? 'items-start' : 'items-end'}`}>
-        <div>
-          <span className={`px-4 py-2 rounded-lg inline-block ${
-            message.type === 'assistant' ? 'rounded-bl-none bg-gray-300 text-gray-600' : 'rounded-br-none bg-blue-600 text-white'
-          }`}>
-            {message.value}
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-))}
-{isLoading && (
-  <div className="chat-message flex justify-start">
-    <div className="flex items-end">
-      <Image
-        src="/animals/levo.png"
-        alt="Levo"
-        width={24}
-        height={24}
-        className="rounded-full"
-      />
-      <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 items-start">
-        <div>
-          <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600 relative">
-            Typing...
-            <span className="animate-ping absolute top-0 right-0 inline-flex w-2 h-2 rounded-full bg-orange-500 opacity-75"></span>
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-<div ref={messagesEndRef} />
+          <div key={index} className={`chat-message ${message.type === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
+            <div className={`flex items-end ${message.type === 'assistant' ? '' : 'flex-row-reverse'}`}>
+              <Image
+                src={message.type === 'assistant' ? "/animals/levo.png" : "/student_01.png"}
+                alt={message.type === 'assistant' ? "Levo" : "User"}
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <div className={`flex flex-col space-y-2 text-xs max-w-xs mx-2 ${message.type === 'assistant' ? 'items-start' : 'items-end'}`}>
+                <div>
+                  <span className={`px-4 py-2 rounded-lg inline-block ${
+                    message.type === 'assistant' ? 'rounded-bl-none bg-gray-300 text-gray-600' : 'rounded-br-none bg-blue-600 text-white'
+                  }`}>
+                    {message.value}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="chat-message flex justify-start">
+            <div className="flex items-end">
+              <Image
+                src="/animals/levo.png"
+                alt="Levo"
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 items-start">
+                <div>
+                  <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600 relative">
+                    Levo is thinking...
+                    <span className="animate-ping absolute top-0 right-0 inline-flex w-2 h-2 rounded-full bg-orange-500 opacity-75"></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </CharacterBase>
       
       {currentActivity && (

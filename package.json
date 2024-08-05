@@ -18,11 +18,13 @@
     "@radix-ui/react-tooltip": "^1.1.2",
     "@react-three/drei": "^9.109.2",
     "@react-three/fiber": "^8.16.8",
+    "axios": "^1.7.3",
     "cannon-es": "^0.20.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "fetch": "^1.1.0",
     "framer-motion": "^11.3.21",
+    "fs": "0.0.1-security",
     "gsap": "^3.12.5",
     "jest-fetch-mock": "^3.0.3",
     "lucide-react": "^0.416.0",
@@ -38,6 +40,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.167.1",
     "vite": "^5.3.5",
+    "winston": "^3.13.1",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
