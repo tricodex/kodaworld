@@ -4,7 +4,7 @@ from ..ai71_api import AI71API
 import json
 import asyncio
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 class GamificationSystem:
     def __init__(self):

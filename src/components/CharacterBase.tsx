@@ -9,10 +9,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Bell, Settings, LogIn, Home } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 import KodaHeader from './KodaHeader';
+import NextSteps from './NextSteps';
+import LearningProgressComponent from './LearningProgressComponent';
 
 interface Activity {
   name: string;
@@ -33,6 +33,7 @@ interface CharacterBaseProps {
   inputMessage: string;
   setInputMessage: (message: string) => void;
   recordMode: boolean;
+  studentId: string;
 }
 
 export default function CharacterBase({
@@ -48,7 +49,8 @@ export default function CharacterBase({
   onStartRecording,
   inputMessage,
   setInputMessage,
-  recordMode
+  recordMode,
+  studentId
 }: CharacterBaseProps) {
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -67,7 +69,7 @@ export default function CharacterBase({
       )}
       <div className="relative z-10">
         <header className="relative p-2">
-        <KodaHeader />
+          <KodaHeader />
         </header>
         
         <main className="container mx-auto px-4 mt-12">
@@ -181,10 +183,12 @@ export default function CharacterBase({
               
               <Card className="p-6 bg-white bg-opacity-90 shadow-lg rounded-lg">
                 <h3 className="text-xl font-bold mb-4 text-black" style={{ fontFamily: 'var(--font-londrina-shadow)' }}>{progressTitle}</h3>
-                <p className="text-gray-600">Track your progress in {subject.toLowerCase()} here.</p>
-                <div className="mt-4 h-4 bg-gray-200 rounded-full">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '60%' }}></div>
-                </div>
+                <LearningProgressComponent studentId={studentId} />
+              </Card>
+
+              <Card className="p-6 bg-white bg-opacity-90 shadow-lg rounded-lg">
+                <h3 className="text-xl font-bold mb-4 text-black" style={{ fontFamily: 'var(--font-londrina-shadow)' }}>Next Steps</h3>
+                <NextSteps studentId={studentId} />
               </Card>
             </div>
           </div>

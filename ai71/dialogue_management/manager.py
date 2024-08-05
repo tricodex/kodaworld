@@ -1,12 +1,50 @@
 # ai71/dialogue_management/manager.py
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Any
 from datetime import datetime
+import random
 
 class DialogueManager:
     def __init__(self):
         self.logger = self._setup_logger()
         self.conversations: Dict[str, List[Dict[str, str]]] = {}
+        self.character_personas = {
+            "wake": {
+                "name": "Wake",
+                "description": "the musical whale, a guide through the world of music and sound",
+                "traits": ["enthusiastic", "knowledgeable about music", "encouraging"],
+                "topics": ["music theory", "instruments", "composers", "musical history"],
+                "catchphrases": ["Let's dive into the ocean of music!", "That sounds harmonious!"]
+            },
+            "levo": {
+                "name": "Levo",
+                "description": "the scholarly lion, ready to unravel the mysteries of science, math and programming",
+                "traits": ["analytical", "patient", "curious"],
+                "topics": ["science", "math", "programming", "problem-solving"],
+                "catchphrases": ["Let's experiment with that idea!", "Fascinating hypothesis!"]
+            },
+            "mina": {
+                "name": "Mina",
+                "description": "the globetrotting monkey, an expert in geography, cultures, and space exploration",
+                "traits": ["adventurous", "curious", "friendly"],
+                "topics": ["geography", "cultures", "space", "travel"],
+                "catchphrases": ["Let's embark on a new adventure!", "The world is full of wonders!"]
+            },
+            "ella": {
+                "name": "Ella",
+                "description": "the wise elephant, here to make history come alive",
+                "traits": ["wise", "thoughtful", "insightful"],
+                "topics": ["history", "historical figures", "historical impact"],
+                "catchphrases": ["History has much to teach us!", "Let's journey through time!"]
+            },
+            "ai-tutor": {
+                "name": "Koda",
+                "description": "a friendly and knowledgeable Koda",
+                "traits": ["adaptable", "encouraging", "patient"],
+                "topics": ["various subjects", "learning strategies", "study skills"],
+                "catchphrases": ["Learning is an adventure!", "Every question is a step towards knowledge!"]
+            }
+        }
 
     def _setup_logger(self):
         logger = logging.getLogger(__name__)
@@ -17,12 +55,22 @@ class DialogueManager:
         logger.addHandler(handler)
         return logger
     
-    async def process_ai_response(self, response: str, student_id: str):
+    def _generate_character_response(self, character: str, content: str) -> str:
+        persona = self.character_personas.get(character, self.character_personas["ai-tutor"])
+        response = f"{persona['name']} the {persona['description']} says: {content}"
+        if random.random() < 0.3:  # 30% chance to add a catchphrase
+            response += f" {random.choice(persona['catchphrases'])}"
+        return response
+
+    async def process_ai_response(self, response: str, student_id: str, character: str):
+        character_response = self._generate_character_response(character, response)
         self.conversations.setdefault(student_id, []).append({
             "role": "assistant",
-            "content": response,
-            "timestamp": datetime.now().isoformat()
+            "content": character_response,
+            "timestamp": datetime.now().isoformat(),
+            "character": character
         })
+        return character_response
 
     async def get_conversation_history(self, student_id: str) -> List[Dict[str, str]]:
         try:
@@ -51,57 +99,86 @@ class DialogueManager:
         except Exception as e:
             self.logger.error(f"Error collecting feedback from student {student_id}: {str(e)}")
 
-    async def analyze_learning_progress(self, student_id: str) -> Dict[str, float]:
-        # Simplified progress analysis
+    async def analyze_learning_progress(self, student_id: str) -> Dict[str, Any]:
         try:
             history = self.conversations.get(student_id, [])
-            progress = len(history) / 10  # Simplified progress calculation
+            interaction_count = len(history)
+            topic_coverage = len(set(msg["character"] for msg in history if msg["role"] == "assistant"))
+            progress = min((interaction_count / 50) * 0.5 + (topic_coverage / len(self.character_personas)) * 0.5, 1.0)
             self.logger.info(f"Analyzed learning progress for student {student_id}")
-            return {"progress": min(progress, 1.0)}
+            return {"progress": progress, "interaction_count": interaction_count, "topic_coverage": topic_coverage}
         except Exception as e:
             self.logger.error(f"Error analyzing learning progress for student {student_id}: {str(e)}")
-            return {"progress": 0.0}
+            return {"progress": 0.0, "interaction_count": 0, "topic_coverage": 0}
 
     async def recommend_next_steps(self, student_id: str) -> List[str]:
-        # Simplified next steps recommendation
         try:
-            progress = await self.analyze_learning_progress(student_id)
-            if progress["progress"] < 0.5:
-                return ["Continue with current lessons", "Practice more", "Ask for help if needed"]
+            progress_data = await self.analyze_learning_progress(student_id)
+            progress = progress_data["progress"]
+            recommendations = []
+            if progress < 0.3:
+                recommendations = [
+                    "Continue exploring topics with different KodaWorld characters",
+                    "Try out some of the interactive games and activities",
+                    "Don't hesitate to ask questions about topics you find interesting"
+                ]
+            elif progress < 0.7:
+                recommendations = [
+                    "Dive deeper into topics you've shown interest in",
+                    "Challenge yourself with more advanced questions",
+                    "Try to make connections between different subjects you've learned about"
+                ]
             else:
-                return ["Move to advanced topics", "Review past material", "Help others"]
+                recommendations = [
+                    "Explore advanced topics in your favorite subjects",
+                    "Try teaching what you've learned to others",
+                    "Work on a project that combines multiple areas of knowledge"
+                ]
+            self.logger.info(f"Generated recommendations for student {student_id}")
+            return recommendations
         except Exception as e:
             self.logger.error(f"Error generating recommendations for student {student_id}: {str(e)}")
             return ["Continue with your current learning path"]
 
-    async def process_user_input(self, user_input: str, student_id: str) -> str:
+    async def process_user_input(self, user_input: str, student_id: str, character: str) -> str:
         try:
-            self.logger.info(f"Processing input for student {student_id}: {user_input}")
+            self.logger.info(f"Processing input for student {student_id} with character {character}: {user_input}")
             self.conversations.setdefault(student_id, []).append({
                 "role": "user",
-                "content": user_input
+                "content": user_input,
+                "timestamp": datetime.now().isoformat()
             })
-            # Simple response generation
-            response = f"I received your message: {user_input}. How can I help you further?"
-            self.conversations[student_id].append({
-                "role": "assistant",
-                "content": response
-            })
-            return response
+            # This is a placeholder. In a real implementation, you would call your AI model here.
+            ai_response = f"Thank you for your question about {user_input}. Let's explore this topic together!"
+            character_response = await self.process_ai_response(ai_response, student_id, character)
+            return character_response
         except Exception as e:
             self.logger.error(f"Error processing input for student {student_id}: {str(e)}")
             return "I'm sorry, but I encountered an error. Please try again later."
 
-    async def optimize_curriculum(self, current_curriculum: Dict, performance_data: Dict, learning_goals: List[str]) -> Dict:
-        # Simplified curriculum optimization
+    async def optimize_curriculum(self, student_id: str, current_curriculum: Dict, performance_data: Dict, learning_goals: List[str]) -> Dict:
         try:
-            self.logger.info("Optimizing curriculum")
-            # Just return the input as the "optimized" curriculum for simplicity
+            self.logger.info(f"Optimizing curriculum for student {student_id}")
+            progress_data = await self.analyze_learning_progress(student_id)
+            
+            # This is a simplified optimization. In a real implementation, you would use more sophisticated algorithms.
+            optimized_curriculum = current_curriculum.copy()
+            if progress_data["progress"] < 0.3:
+                optimized_curriculum["difficulty"] = "beginner"
+            elif progress_data["progress"] < 0.7:
+                optimized_curriculum["difficulty"] = "intermediate"
+            else:
+                optimized_curriculum["difficulty"] = "advanced"
+            
+            # Add more topics based on learning goals
+            optimized_curriculum["topics"] = list(set(current_curriculum.get("topics", []) + learning_goals))
+            
             return {
-                "optimized_curriculum": current_curriculum,
+                "optimized_curriculum": optimized_curriculum,
                 "performance_data": performance_data,
-                "learning_goals": learning_goals
+                "learning_goals": learning_goals,
+                "progress_data": progress_data
             }
         except Exception as e:
-            self.logger.error(f"Error optimizing curriculum: {str(e)}")
+            self.logger.error(f"Error optimizing curriculum for student {student_id}: {str(e)}")
             return {"error": "Unable to optimize curriculum at this time."}

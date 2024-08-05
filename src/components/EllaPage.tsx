@@ -1,19 +1,28 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ActivityLayout from '@/components/ActivityLayout';
-import CharacterBase from './CharacterBase';
+import CharacterBase from '@/components/CharacterBase';
+import Image from 'next/image';
 import HistoricalTimelineGame from './EllaAct/HistoricalTimelineGame';
 import AncientCivilizationPuzzle from './EllaAct/AncientCivilizationPuzzle';
 import HistoryChess from './EllaAct/HistoryChess';
 import HistoricalFigureQuiz from './EllaAct/HistoricalFigureQuiz';
+import Koda from '@/components/Koda';
 import { Button } from "@/components/ui/button";
-import Image from 'next/image';
+import NextSteps from '@/components/NextSteps';
+import LearningProgressComponent from '@/components/LearningProgressComponent';
+import { sendChatMessage, getConversationHistory } from '@/api/chat';
+import { ChatMessage } from '@/types/api';
 
-interface ChatMessage {
-  type: 'user' | 'assistant';
-  value: string;
-}
+// Define activities
+const activities = [
+  { name: "Koda", key: "Koda" },
+  { name: "Historical Timeline Game", key: "TimelineGame" },
+  { name: "Ancient Civilizations Puzzle", key: "CivilizationPuzzle" },
+  { name: "Historical Figure Quiz", key: "HistoricalFigureQuiz" },
+  { name: "History Chess", key: "HistoryChess" }
+];
 
 declare global {
   interface Window {
@@ -23,20 +32,45 @@ declare global {
 }
 
 export default function EllaPage() {
-  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [recordMode, setRecordMode] = useState(false);
+  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
+  // Use a constant for the student ID
+  const STUDENT_ID = 'student_01';
+
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   useEffect(scrollToBottom, [chatMessages]);
 
-  const sendMessage = async () => {
+  // Fetch conversation history when the component mounts
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const history = await getConversationHistory(STUDENT_ID);
+        if (history.length === 0) {
+          // If there's no history, get an initial greeting from Ella
+          const response = await sendChatMessage('ella', 'Greet the user and introduce yourself');
+          setChatMessages([{ type: 'assistant', value: response.response }]);
+        } else {
+          setChatMessages(history);
+        }
+      } catch (error) {
+        console.error('Error fetching conversation history:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim()) return;
 
     const newMessage: ChatMessage = { type: 'user', value: inputMessage };
@@ -45,32 +79,17 @@ export default function EllaPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          character: 'ella',
-          message: inputMessage
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      const data = await response.json();
-      setChatMessages(prev => [...prev, { type: 'assistant', value: data.response }]);
+      const response = await sendChatMessage('ella', inputMessage);
+      setChatMessages(prev => [...prev, { type: 'assistant', value: response.response }]);
     } catch (error) {
       console.error('Error sending message:', error);
       setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [inputMessage]);
 
-  const startRecording = () => {
+  const startRecording = useCallback(() => {
     if (!('webkitSpeechRecognition' in window)) {
       alert('Your browser does not support speech recognition. Please use Google Chrome.');
     } else {
@@ -98,21 +117,16 @@ export default function EllaPage() {
         console.error(event);
       };
     }
-  };
+  }, []);
 
-  const toggleActivity = (activity: string | null) => {
+  const toggleActivity = useCallback((activity: string | null) => {
     setCurrentActivity(activity);
-  };
+  }, []);
 
-  const activities = [
-    { name: "Historical Timeline Game", key: "TimelineGame" },
-    { name: "Ancient Civilizations Puzzle", key: "CivilizationPuzzle" },
-    { name: "Historical Figure Quiz", key: "HistoricalFigureQuiz" },
-    { name: "History Chess", key: "HistoryChess" }
-  ];
-
-  const renderActivity = () => {
+  const renderActivity = useCallback(() => {
     switch (currentActivity) {
+      case "Koda":
+        return <Koda studentId={STUDENT_ID} />;
       case "TimelineGame":
         return <HistoricalTimelineGame />;
       case "CivilizationPuzzle":
@@ -124,18 +138,19 @@ export default function EllaPage() {
       default:
         return null;
     }
-  };
+  }, [currentActivity, STUDENT_ID]);
 
   return (
-    <>
+    <div className="relative min-h-screen">
       <CharacterBase
-        backgroundImage="/backgrounds/ella-history-bg.jpg"
+        studentId={STUDENT_ID}
+        backgroundImage="/backgrounds/ella-bg.webp"
         characterName="Ella"
         subject="History"
         chatDescription="Chat with Ella about historical events, figures, and civilizations. Explore different eras, learn about important moments in history, and understand how past events have shaped our world today."
         activities={activities.map(activity => ({ name: activity.name, action: () => toggleActivity(activity.key) }))}
         progressTitle="Time Traveler's Log"
-        onSendMessage={sendMessage}
+        onSendMessage={handleSendMessage}
         onStartRecording={startRecording}
         inputMessage={inputMessage}
         setInputMessage={setInputMessage}
@@ -163,6 +178,27 @@ export default function EllaPage() {
             </div>
           </div>
         ))}
+        {isLoading && (
+          <div className="chat-message flex justify-start">
+            <div className="flex items-end">
+              <Image
+                src="/animals/ella.png"
+                alt="Ella"
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <div className="flex flex-col space-y-2 text-xs max-w-xs mx-2 items-start">
+                <div>
+                  <span className="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600 relative">
+                    Typing...
+                    <span className="animate-ping absolute top-0 right-0 inline-flex w-2 h-2 rounded-full bg-orange-500 opacity-75"></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </CharacterBase>
 
@@ -174,6 +210,8 @@ export default function EllaPage() {
           {renderActivity()}
         </ActivityLayout>
       )}
-    </>
+
+      
+    </div>
   );
 }

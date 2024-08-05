@@ -1,30 +1,39 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getLearningProgress } from '@/api/chat';
+import { useToast } from "@/components/ui/use-toast";
 
 const LearningProgressComponent: React.FC<{ studentId: string }> = ({ studentId }) => {
   const [progress, setProgress] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { addToast } = useToast();
 
-  const fetchProgress = async () => {
+  const fetchProgress = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await getLearningProgress(studentId);
-      // The assistant ensures that the progress is a number
-      setProgress(typeof response.progress === 'number' ? response.progress : null);
+      const progressValue = await getLearningProgress(studentId);
+      if (typeof progressValue === 'number') {
+        setProgress(progressValue);
+      } else {
+        throw new Error('Invalid progress value');
+      }
     } catch (error) {
       console.error('Error fetching learning progress:', error);
       setProgress(null);
+      addToast({
+        title: "Error",
+        description: "Failed to fetch learning progress. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [studentId, addToast]);
 
   useEffect(() => {
     fetchProgress();
-  }, [studentId]);
+  }, [fetchProgress]);
 
   return (
     <Card className="p-6 max-w-3xl mx-auto">
@@ -33,7 +42,7 @@ const LearningProgressComponent: React.FC<{ studentId: string }> = ({ studentId 
         <p>Loading progress...</p>
       ) : progress !== null ? (
         <>
-          <p className="mb-4">Your current progress: {progress}%</p>
+          <p className="mb-4">Your current progress: {progress.toFixed(2)}%</p>
           <Button onClick={fetchProgress}>Refresh Progress</Button>
         </>
       ) : (

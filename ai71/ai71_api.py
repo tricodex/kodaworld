@@ -37,7 +37,7 @@ class AI71API:
                     raise
                 time.sleep(2 ** attempt)  # Exponential backoff
 
-    def chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-180b", **kwargs) -> Dict[str, Any]:
+    def chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-11b", **kwargs) -> Dict[str, Any]: #180b or 11b
         payload = {
             "model": model,
             "messages": messages,
@@ -47,7 +47,7 @@ class AI71API:
         self._update_memory(messages, response['choices'][0]['message']['content'])
         return response
 
-    def stream_chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-180b", **kwargs) -> Generator[Dict[str, Any], None, None]:
+    def stream_chat_completion(self, messages: List[Dict[str, str]], model: str = "falcon-11b   ", **kwargs) -> Generator[Dict[str, Any], None, None]: #180b or 11b
         payload = {
             "model": model,
             "messages": messages,

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useRef, useMemo, useState, useCallback } from 'react'
-import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
-import * as THREE from 'three'
-import { Slider } from "../ui/slider"
+import React, { useRef, useMemo, useState, useCallback } from 'react';
+import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { Slider } from "../ui/slider";
+import * as THREE from 'three';
 
 interface ParticlesProps {
   count: number;
@@ -14,6 +14,7 @@ interface ParticlesProps {
 }
 
 function Particles({ count, speed, size, color }: ParticlesProps) {
+  // The developer uses a more generic type to avoid version conflicts
   const points = useRef<THREE.Points>(null);
   const mousePosition = useRef([0, 0]);
   const { viewport } = useThree();
@@ -39,7 +40,7 @@ function Particles({ count, speed, size, color }: ParticlesProps) {
       const positionsArray = points.current.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < count; i++) {
         const i3 = i * 3;
-        
+
         // Move particles away from mouse
         const dx = positionsArray[i3] - mousePosition.current[0];
         const dy = positionsArray[i3 + 1] - mousePosition.current[1];
@@ -48,7 +49,7 @@ function Particles({ count, speed, size, color }: ParticlesProps) {
           positionsArray[i3] += dx * 0.1;
           positionsArray[i3 + 1] += dy * 0.1;
         }
-        
+
         // Regular movement
         positionsArray[i3] += velocities[i3] * speed;
         positionsArray[i3 + 1] += velocities[i3 + 1] * speed;
@@ -67,10 +68,13 @@ function Particles({ count, speed, size, color }: ParticlesProps) {
   });
 
   const handlePointerMove = useCallback((event: ThreeEvent<PointerEvent>) => {
-    mousePosition.current = [
-      (event.offsetX / event.target.clientWidth) * 2 - 1,
-      -(event.offsetY / event.target.clientHeight) * 2 + 1
-    ];
+    const target = event.target as HTMLCanvasElement | null;
+    if (target) {
+      mousePosition.current = [
+        (event.offsetX / target.clientWidth) * 2 - 1,
+        -(event.offsetY / target.clientHeight) * 2 + 1,
+      ];
+    }
   }, []);
 
   const handleClick = useCallback(() => {

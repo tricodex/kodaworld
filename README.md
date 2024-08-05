@@ -1,6 +1,7 @@
+
 # KodaWorld
 
-KodaWorld is an innovative AI-powered educational platform designed to make learning engaging and interactive for students across various subjects. With its unique blend of llm technology and gamified learning experiences, KodaWorld aims to revolutionize the way students approach education.
+KodaWorld is an innovative AI-powered educational platform designed to make learning engaging and interactive for students across various subjects. With its unique blend of Falcon LLM technology and gamified learning experiences, KodaWorld aims to revolutionize the way students approach education.
 
 ## Table of Contents
 
@@ -32,8 +33,8 @@ KodaWorld is an innovative AI-powered educational platform designed to make lear
 - **Styling**: Tailwind CSS
 - **Animations**: Framer Motion, GSAP
 - **Backend**: Python, FastAPI
-- **AI/ML**: LangChain, OpenAI GPT models
-- **Database**: (Not specified in the current codebase, likely to be added)
+- **AI**: Falcon 180b, Falcon 11b, Langchain
+- **Database**: PostgreSQL
 
 ## Getting Started
 
@@ -43,43 +44,45 @@ KodaWorld is an innovative AI-powered educational platform designed to make lear
 - Python (v3.8 or later)
 - pnpm (v6 or later)
 - AI71 API key
+- PostgreSQL database
 
 ### Installation
 
 1. Clone the repository:
-   ```
+   ```bash
    git clone https://github.com/your-organization/kodaworld.git
    cd kodaworld
    ```
 
 2. Install frontend dependencies:
-   ```
+   ```bash
    pnpm install
    ```
 
 3. Install backend dependencies:
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
 
 4. Set up environment variables:
    Create a `.env.local` file in the root directory and add:
-   ```
+   ```bash
    NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
    AI71_API_KEY=your-ai71-api-key
+   POSTGRES_URL=your-postgres-url
    ```
 
 5. Start the development server:
-   ```
+   ```bash
    pnpm dev
    ```
 
 6. In a separate terminal, start the backend server:
-   ```
+   ```bash
    python -m uvicorn ai71.main:app --reload
-      ```
+   ```
 
-7. Open [http://localhost:8000](http://localhost:8000) in your browser to see the application.
+7. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
 ## Project Structure
 
@@ -90,21 +93,29 @@ The project is organized into two main parts:
 
 Key directories:
 
+- `src/api/`: API handlers
+- `src/app/`: Next.js application pages and components
 - `src/components/`: React components
-- `src/pages/`: Next.js pages
-- `src/styles/`: CSS and styling files
-- `ai71/`: Backend Python code
-- `public/`: Static assets
+- `src/config/`: Configuration files
+- `src/lib/`: Utility libraries
+- `src/styles/`: Styling files
+- `src/tests/`: Test files
+- `src/types/`: Type definitions
+- `src/utils/`: Utility functions
 
 ## Key Components
 
 - `KodaWorld.tsx`: Main component for the KodaWorld interface
-- `CharacterBase.tsx`: Base component for character-specific pages
-- `AITutor.tsx`: AI-powered tutoring component
-- `CurriculumOptimizer.tsx`: AI-driven curriculum optimization tool
-- `PeerMatcher.tsx`: Intelligent peer matching system
-- `DialogueManager.py`: Manages conversations with AI characters
-- `ScientificSimulator.py`: Generates scientific simulations
+- `LevoPage.tsx`: Page component for the character Levo, including activities like NumbersGame and ParticleGame.
+- `MinaPage.tsx`: Page component for the character Mina, including activities like CountryGame and CulturalExpedition.
+- `EllaPage.tsx`: Page component for the character Ella, including activities like AncientCivilizationPuzzle and HistoricalTimelineGame.
+- `WakePage.tsx`: Page component for the character Wake, including activities like InstrumentQuiz and MusicVisualizer.
+- `CurriculumCreator.tsx`: Tool for creating customized curriculums.
+- `CurriculumView.tsx`: Component for viewing and managing curriculums.
+- `ElementLab`: Suite of reusable UI components like Article, Button, and Card.
+- `GeneralChatPage.tsx`: Component for general chat functionalities.
+- `LearningProgressComponent.tsx`: Component for tracking learning progress.
+- `NextSteps.tsx`: Component for recommending next steps based on user progress.
 
 ## Usage
 
@@ -116,4 +127,6 @@ After starting the application, users can:
 4. Track their learning progress and receive personalized recommendations.
 5. Collaborate with peers on various learning activities.
 
+## Contact
 
+For any queries, please contact me at [kodaworld.edu@gmail.com](kodaworld.edu@gmail.com)

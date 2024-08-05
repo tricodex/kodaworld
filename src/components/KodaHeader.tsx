@@ -23,12 +23,13 @@ const KodaHeader: React.FC = () => {
           <Link href="/element-lab" passHref>
             <Button variant="ghost" className="text-black hover:bg-black/20">Element Lab</Button>
           </Link>
-          <Link href="/koda-survival" passHref>
-            <Button variant="ghost" className="text-black hover:bg-black/20">Koda Survival</Button>
+          <Link href="/curriculum-view" passHref>
+            <Button variant="ghost" className="text-black hover:bg-black/20">              
+            <BookOpen className="h-5 w-5 mr-2" />
+            Curriculum</Button>
           </Link>
           <Link href="/curriculum-optimizer" passHref>
             <Button variant="ghost" className="text-black hover:bg-black/20">
-              <BookOpen className="h-5 w-5 mr-2" />
               Curriculum Optimizer
             </Button>
           </Link>

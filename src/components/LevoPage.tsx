@@ -1,29 +1,28 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import CharacterBase from './CharacterBase';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import CharacterBase from '@/components/CharacterBase';
 import ActivityLayout from '@/components/ActivityLayout';
 import ParticleGame from './LevoAct/ParticleGame';
 import ChemistryLabSim from './LevoAct/ChemistryLabSim';
 import PhysicsPuzzle from './LevoAct/PhysicsPuzzle';
 import NumbersGame from './LevoAct/NumbersGame';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import Koda from '@/components/Koda';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { apiRequest } from '@/utils/apiUtils';
+import { sendChatMessage } from '@/api/chat';
+import { ChatMessage } from '@/types/api';
 
-interface ChatMessage {
-  type: 'user' | 'assistant';
-  value: string;
-}
+// Define activities available for Levo
+const activities = [
+  { name: "Koda", key: "Koda" },
+  { name: "Particle Game", key: "ParticleGame" },
+  { name: "Chemistry Lab Simulator", key: "ChemistryLabSim" },
+  { name: "Physics Puzzle", key: "PhysicsPuzzle" },
+  { name: "Numbers Game", key: "NumbersGame" },
+];
 
-interface AITutorMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
+// Declare global types for speech recognition
 declare global {
   interface Window {
     webkitSpeechRecognition: any;
@@ -32,31 +31,32 @@ declare global {
 }
 
 export default function LevoPage() {
-  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { 
+      type: 'assistant', 
+      value: "Hello! I'm Levo, your science tutor. What would you like to learn about today? We can explore topics in computers, physics, chemistry, biology, robots or any other scientific field you're interested in!" 
+    }
+  ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recordMode, setRecordMode] = useState(false);
+  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [AITutorMessages, setAITutorMessages] = useState<AITutorMessage[]>([]);
-  const [AITutorInput, setAITutorInput] = useState('');
-  const [isAITutorLoading, setIsAITutorLoading] = useState(false);
-  const AITutorMessagesEndRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
 
-  const scrollToBottom = () => {
+  const STUDENT_ID = 'student_01';
+
+  // Scroll to bottom of chat when messages change
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, [chatMessages]);
 
-  useEffect(scrollToBottom, [chatMessages]);
+  // Prevent unwanted scrolling when the page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
-  const scrollAITutorToBottom = () => {
-    AITutorMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(scrollAITutorToBottom, [AITutorMessages]);
-
-  const sendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim()) return;
 
     const newMessage: ChatMessage = { type: 'user', value: inputMessage };
@@ -65,23 +65,8 @@ export default function LevoPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          character: 'levo',
-          message: inputMessage
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      const data = await response.json();
-      setChatMessages(prev => [...prev, { type: 'assistant', value: data.response }]);
+      const response = await sendChatMessage('levo', inputMessage);
+      setChatMessages(prev => [...prev, { type: 'assistant', value: response.response }]);
     } catch (error) {
       console.error('Error sending message:', error);
       setChatMessages(prev => [...prev, { type: 'assistant', value: 'Sorry, I encountered an error. Please try again.' }]);
@@ -92,51 +77,9 @@ export default function LevoPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [inputMessage, addToast]);
 
-  const sendAITutorMessage = async () => {
-    if (!AITutorInput.trim()) return;
-  
-    const newMessage: AITutorMessage = { role: 'user', content: AITutorInput };
-    setAITutorMessages(prev => [...prev, newMessage]);
-    setAITutorInput('');
-    setIsAITutorLoading(true);
-  
-    try {
-      const response = await apiRequest<{ response: string }>('/api/ai-tutor', {
-        method: 'POST',
-        body: JSON.stringify({ message: AITutorInput, studentId: 'levo-student' }),
-      });
-      console.log('AI Tutor response:', response);
-      setAITutorMessages(prev => [...prev, { role: 'assistant', content: response.response }]);
-    } catch (error) {
-      console.error('Error sending message to AI Tutor:', error);
-      addToast({
-        title: "Error",
-        description: "Failed to get a response from AI Tutor. Please try again.",
-      });
-    } finally {
-      setIsAITutorLoading(false);
-    }
-  };
-
-  const handleAITutorClearHistory = async () => {
-    try {
-      await fetch(`/api/clear-history/levo-student`, { method: 'POST' });
-      setAITutorMessages([]);
-      addToast({
-        title: "Success",
-        description: "AI Tutor conversation history cleared successfully.",
-      });
-    } catch (error) {
-      addToast({
-        title: "Error",
-        description: "Failed to clear AI Tutor conversation history.",
-      });
-    }
-  };
-
-  const startRecording = () => {
+  const startRecording = useCallback(() => {
     if (!('webkitSpeechRecognition' in window)) {
       addToast({
         title: "Speech Recognition Unavailable",
@@ -171,71 +114,16 @@ export default function LevoPage() {
         });
       };
     }
-  };
+  }, [addToast]);
 
-  const activities = [
-    { name: "AI Tutor", key: "AITutor" },
-    { name: "Particle Game", key: "ParticleGame" },
-    { name: "Chemistry Lab Simulator", key: "ChemistryLabSim" },
-    { name: "Physics Puzzle", key: "PhysicsPuzzle" },
-    { name: "Numbers Game", key: "NumbersGame" },
-  ];
+  const toggleActivity = useCallback((activity: string | null) => {
+    setCurrentActivity(activity);
+  }, []);
 
-  const renderActivity = () => {
+  const renderActivity = useCallback(() => {
     switch (currentActivity) {
-      case "AITutor":
-        return (
-          <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto mb-4">
-              {AITutorMessages.map((message, index) => (
-                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
-                  <div className={`flex items-end ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <Image
-                      src={message.role === 'user' ? "/animals/koda_logo128.png" : "/animals/levo.png"}
-                      alt={message.role === 'user' ? "User" : "AI"}
-                      width={24}
-                      height={24}
-                      className="rounded-full"
-                    />
-                    <div className={`max-w-xs mx-2 p-3 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                      {message.content}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {isAITutorLoading && (
-                <div className="flex justify-start mb-4">
-                  <div className="flex items-center bg-gray-200 rounded-lg px-4 py-2">
-                    <span className="animate-pulse">AI is thinking...</span>
-                  </div>
-                </div>
-              )}
-              <div ref={AITutorMessagesEndRef} />
-            </div>
-            <div className="flex items-center mb-4">
-              <Input 
-                value={AITutorInput} 
-                onChange={(e) => setAITutorInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendAITutorMessage()}
-                placeholder="Ask AI Tutor a question..."
-                className="flex-grow mr-2"
-              />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={sendAITutorMessage} disabled={isAITutorLoading}>
-                      {isAITutorLoading ? "Sending..." : "Send"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Send your question to the AI Tutor</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Button onClick={handleAITutorClearHistory} variant="outline">
-              Clear History
-            </Button>
-          </div>
-        );
+      case "Koda":
+        return <Koda studentId={STUDENT_ID} />;
       case "ParticleGame":
         return <ParticleGame />;
       case "ChemistryLabSim":
@@ -247,22 +135,23 @@ export default function LevoPage() {
       default:
         return null;
     }
-  };
+  }, [currentActivity]);
 
   return (
     <div className="relative min-h-screen">
       <CharacterBase
-        backgroundImage="/backgrounds/levo-science-bg.jpeg"
+        backgroundImage="/backgrounds/levo-bg.webp"
         characterName="Levo"
         subject="Science"
         chatDescription="Chat with Levo about scientific concepts and experiments."
-        activities={activities.map(activity => ({ name: activity.name, action: () => setCurrentActivity(activity.key) }))}
+        activities={activities.map(activity => ({ name: activity.name, action: () => toggleActivity(activity.key) }))}
         progressTitle="Scientific Achievements"
-        onSendMessage={sendMessage}
+        onSendMessage={handleSendMessage}
         onStartRecording={startRecording}
         inputMessage={inputMessage}
         setInputMessage={setInputMessage}
         recordMode={recordMode}
+        studentId={STUDENT_ID}
       >
         {chatMessages.map((message, index) => (
           <div key={index} className={`chat-message ${message.type === 'assistant' ? 'flex justify-start' : 'flex justify-end'}`}>
@@ -313,7 +202,7 @@ export default function LevoPage() {
       {currentActivity && (
         <ActivityLayout
           title={activities.find(a => a.key === currentActivity)?.name || ''}
-          onClose={() => setCurrentActivity(null)}
+          onClose={() => toggleActivity(null)}
         >
           {renderActivity()}
         </ActivityLayout>
