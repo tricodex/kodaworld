@@ -108,9 +108,46 @@ For any queries, please contact at [kodaworld.edu@gmail.com](mailto:kodaworld.ed
 
 ## Future Developments
 
-- **Peer Matcher**: Being developed to facilitate group learning.
-- **Academica**: Under construction to enhance academic content.
-- **Gamification**: In progress to add engaging game-like elements to the learning process.
+### Peer Matching
+
+**Current Status:**
+Forms study groups based on skill levels and compatibility but lacks real-time adjustments and scalability.
+
+**Enhancements:**
+- **Heuristics-Based Matching:** Use logic-based algorithms for dynamic, real-time group formation, ensuring efficient and adaptive groupings.
+- **Advanced Compatibility Metrics:** Integrate detailed metrics, including past collaboration success and real-time performance data, to enhance group compatibility.
+
+### Gamification
+
+**Current Status:**
+Enhances engagement through achievements and challenges but lacks personalization and long-term strategies.
+
+**Enhancements:**
+- **Rule-Based Systems:** Implement predefined rules for adaptive challenges and achievements. This approach personalizes the learning experience based on student progress.
+- **Varied Engagement Strategies:** Introduce diverse gamification elements like daily quests, streak rewards, and social achievements, using logic-based rules to maintain long-term engagement.
+
+### Academic Curriculum Optimizer
+
+**Current Status:**
+Personalizes learning paths but needs better data integration and recommendation accuracy.
+
+**Enhancements:**
+- **Data Management Techniques:** Use advanced data management for better integration and analysis, ensuring precise and actionable learning path recommendations. Logic-based methods can effectively manage and interpret diverse performance metrics.
+- **Feedback Loops:** Implement continuous improvement cycles using user feedback to refine recommendations, enhancing personalization.
+
+### Academica
+
+**Current Status:**
+Generates interactive environments but struggles with relevance and engagement.
+
+**Enhancements:**
+
+- **Heuristic Content Generation:** Use heuristic rules to create consistent and engaging educational content. This method ensures relevance and engagement.
+- **Enhanced Interaction Handling:** Improve processing and responses to student interactions using predefined logic, making interactions more meaningful and responsive.
+
+### Expanding Game and Educational Tools
+
+KodaWorld plans to introduce more game-based and educational tools accessible to all users. These tools will include interactive simulations, collaborative projects, and multimedia resources. By leveraging both educational theory and game design principles, these additions will make learning more immersive and enjoyable. The goal is to cater to diverse learning styles and interests, ensuring every student finds engaging and effective learning opportunities.
 
 ## Setup Instructions
 
