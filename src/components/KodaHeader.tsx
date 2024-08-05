@@ -20,6 +20,10 @@ const KodaHeader: React.FC = () => {
           <span style={{ letterSpacing: 'inherit' }}>DA</span>
         </Link>
         <div className="flex items-center space-x-4">
+        <Link href="/about" passHref>
+            <Button variant="ghost" className="text-black hover:bg-black/20">About</Button>
+          </Link>
+        
         <Link href="/space" passHref>
             <Button variant="ghost" className="text-black hover:bg-black/20">Space</Button>
           </Link>
