@@ -22,6 +22,24 @@ export const GlobalStyle = createGlobalStyle`
   body { margin: 0; background: #000; font-family: Arial, sans-serif; color: #fff; overflow-x: hidden; }
 `;
 
+// Move the rotate keyframes definition here
+const rotate = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const enhancedRing = keyframes`
+  0%, 100% { transform: rotateY(var(--start)) rotateX(var(--start)) rotateZ(var(--start)) scale(1); }
+  25%, 75% { transform: rotateY(calc(var(--start) + 90deg)) rotateX(calc(var(--start) + 90deg)) rotateZ(calc(var(--start) + 90deg)) scale(1.2); }
+  50% { transform: rotateY(calc(var(--start) + 180deg)) rotateX(calc(var(--start) + 180deg)) rotateZ(calc(var(--start) + 180deg)) scale(1); }
+`;
+
+const enhancedRingReverse = keyframes`
+  0%, 100% { transform: rotateY(calc(360deg - var(--start))) rotateX(calc(360deg - var(--start))) rotateZ(calc(360deg - var(--start))) scale(1); }
+  25%, 75% { transform: rotateY(calc(270deg - var(--start))) rotateX(calc(270deg - var(--start))) rotateZ(calc(270deg - var(--start))) scale(1.1); }
+  50% { transform: rotateY(calc(180deg - var(--start))) rotateX(calc(180deg - var(--start))) rotateZ(calc(180deg - var(--start))) scale(1); }
+`;
+
 export const SolarSystemContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -164,23 +182,6 @@ export const CentralButton = styled(Link)<{ style?: CustomCSS }>`
     border-radius: 50%;
     pointer-events: none;
   }
-`;
-
-const rotate = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
-
-const enhancedRing = keyframes`
-  0%, 100% { transform: rotateY(var(--start)) rotateX(var(--start)) rotateZ(var(--start)) scale(1); }
-  25%, 75% { transform: rotateY(calc(var(--start) + 90deg)) rotateX(calc(var(--start) + 90deg)) rotateZ(calc(var(--start) + 90deg)) scale(1.2); }
-  50% { transform: rotateY(calc(var(--start) + 180deg)) rotateX(calc(var(--start) + 180deg)) rotateZ(calc(var(--start) + 180deg)) scale(1); }
-`;
-
-const enhancedRingReverse = keyframes`
-  0%, 100% { transform: rotateY(calc(360deg - var(--start))) rotateX(calc(360deg - var(--start))) rotateZ(calc(360deg - var(--start))) scale(1); }
-  25%, 75% { transform: rotateY(calc(270deg - var(--start))) rotateX(calc(270deg - var(--start))) rotateZ(calc(270deg - var(--start))) scale(1.1); }
-  50% { transform: rotateY(calc(180deg - var(--start))) rotateX(calc(180deg - var(--start))) rotateZ(calc(180deg - var(--start))) scale(1); }
 `;
 
 export const Rings = styled.div<{ style?: CustomCSS }>`

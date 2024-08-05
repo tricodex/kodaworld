@@ -7,7 +7,7 @@ import random
 class DialogueManager:
     def __init__(self):
         self.logger = self._setup_logger()
-        self.conversations: Dict[str, List[Dict[str, str]]] = {}
+        self.conversations: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
         self.character_personas = {
             "wake": {
                 "name": "Wake",
@@ -64,7 +64,7 @@ class DialogueManager:
 
     async def process_ai_response(self, response: str, student_id: str, character: str):
         character_response = self._generate_character_response(character, response)
-        self.conversations.setdefault(student_id, []).append({
+        self.conversations.setdefault(student_id, {}).setdefault(character, []).append({
             "role": "assistant",
             "content": character_response,
             "timestamp": datetime.now().isoformat(),
@@ -72,38 +72,44 @@ class DialogueManager:
         })
         return character_response
 
-    async def get_conversation_history(self, student_id: str) -> List[Dict[str, str]]:
+    async def get_conversation_history(self, student_id: str, character: str) -> List[Dict[str, str]]:
         try:
-            history = self.conversations.get(student_id, [])
-            self.logger.info(f"Retrieved conversation history for student {student_id}")
+            history = self.conversations.get(student_id, {}).get(character, [])
+            self.logger.info(f"Retrieved conversation history for student {student_id} with character {character}")
             return history
         except Exception as e:
-            self.logger.error(f"Error retrieving conversation history for student {student_id}: {str(e)}")
+            self.logger.error(f"Error retrieving conversation history for student {student_id} with character {character}: {str(e)}")
             return []
 
-    async def clear_history(self, student_id: str):
+    async def clear_history(self, student_id: str, character: str):
         try:
-            self.conversations[student_id] = []
-            self.logger.info(f"Cleared conversation history for student {student_id}")
+            if student_id in self.conversations and character in self.conversations[student_id]:
+                self.conversations[student_id][character] = []
+            self.logger.info(f"Cleared conversation history for student {student_id} with character {character}")
         except Exception as e:
-            self.logger.error(f"Error clearing conversation history for student {student_id}: {str(e)}")
+            self.logger.error(f"Error clearing conversation history for student {student_id} with character {character}: {str(e)}")
 
     async def collect_feedback(self, student_id: str, feedback: str):
         try:
             self.logger.info(f"Collected feedback from student {student_id}: {feedback}")
-            self.conversations.setdefault(student_id, []).append({
-                "role": "feedback",
-                "content": feedback,
-                "timestamp": datetime.now().isoformat()
-            })
+            for character in self.conversations.get(student_id, {}):
+                self.conversations[student_id][character].append({
+                    "role": "feedback",
+                    "content": feedback,
+                    "timestamp": datetime.now().isoformat()
+                })
         except Exception as e:
             self.logger.error(f"Error collecting feedback from student {student_id}: {str(e)}")
 
     async def analyze_learning_progress(self, student_id: str) -> Dict[str, Any]:
         try:
-            history = self.conversations.get(student_id, [])
-            interaction_count = len(history)
-            topic_coverage = len(set(msg["character"] for msg in history if msg["role"] == "assistant"))
+            all_interactions = [
+                msg 
+                for character_history in self.conversations.get(student_id, {}).values() 
+                for msg in character_history
+            ]
+            interaction_count = len(all_interactions)
+            topic_coverage = len(set(msg["character"] for msg in all_interactions if msg["role"] == "assistant"))
             progress = min((interaction_count / 50) * 0.5 + (topic_coverage / len(self.character_personas)) * 0.5, 1.0)
             self.logger.info(f"Analyzed learning progress for student {student_id}")
             return {"progress": progress, "interaction_count": interaction_count, "topic_coverage": topic_coverage}
@@ -143,7 +149,7 @@ class DialogueManager:
     async def process_user_input(self, user_input: str, student_id: str, character: str) -> str:
         try:
             self.logger.info(f"Processing input for student {student_id} with character {character}: {user_input}")
-            self.conversations.setdefault(student_id, []).append({
+            self.conversations.setdefault(student_id, {}).setdefault(character, []).append({
                 "role": "user",
                 "content": user_input,
                 "timestamp": datetime.now().isoformat()
@@ -156,16 +162,17 @@ class DialogueManager:
             self.logger.error(f"Error processing input for student {student_id}: {str(e)}")
             return "I'm sorry, but I encountered an error. Please try again later."
 
-    async def optimize_curriculum(self, student_id: str, current_curriculum: Dict, performance_data: Dict, learning_goals: List[str]) -> Dict:
+    async def optimize_curriculum(self, current_curriculum: Dict, performance_data: Dict, learning_goals: List[str]) -> Dict:
         try:
-            self.logger.info(f"Optimizing curriculum for student {student_id}")
-            progress_data = await self.analyze_learning_progress(student_id)
+            self.logger.info(f"Optimizing curriculum")
             
             # This is a simplified optimization. In a real implementation, you would use more sophisticated algorithms.
             optimized_curriculum = current_curriculum.copy()
-            if progress_data["progress"] < 0.3:
+            avg_performance = sum(performance_data.values()) / len(performance_data) if performance_data else 0
+            
+            if avg_performance < 0.3:
                 optimized_curriculum["difficulty"] = "beginner"
-            elif progress_data["progress"] < 0.7:
+            elif avg_performance < 0.7:
                 optimized_curriculum["difficulty"] = "intermediate"
             else:
                 optimized_curriculum["difficulty"] = "advanced"
@@ -177,8 +184,7 @@ class DialogueManager:
                 "optimized_curriculum": optimized_curriculum,
                 "performance_data": performance_data,
                 "learning_goals": learning_goals,
-                "progress_data": progress_data
             }
         except Exception as e:
-            self.logger.error(f"Error optimizing curriculum for student {student_id}: {str(e)}")
+            self.logger.error(f"Error optimizing curriculum: {str(e)}")
             return {"error": "Unable to optimize curriculum at this time."}

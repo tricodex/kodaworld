@@ -5,6 +5,8 @@ import json
 import logging
 from typing import Dict, Any, List
 
+
+from ..models import Environment, Challenge
 class Academica:
     def __init__(self):
         self.ai_api = AI71API()
@@ -33,7 +35,17 @@ class Academica:
             4. Visual or auditory components to enhance learning
             5. Suggestions for group activities or discussions
             
-            Return the environment details as a JSON object.
+            Return the environment details as a JSON object with the following structure:
+            {{
+                "topic": "{topic}",
+                "complexity": "{complexity}",
+                "description": "Brief description of the main concept",
+                "elements": ["List", "of", "interactive", "elements"],
+                "scenarios": ["List", "of", "potential", "scenarios"],
+                "visual_components": ["List", "of", "visual", "components"],
+                "auditory_components": ["List", "of", "auditory", "components"],
+                "group_activities": ["List", "of", "group", "activities"]
+            }}
             """
             
             response = await self.ai_api.chat_completion([
@@ -43,20 +55,20 @@ class Academica:
             
             environment = json.loads(response['choices'][0]['message']['content'])
             self.logger.info(f"Successfully generated environment for {topic}")
-            return environment
+            return Environment(**environment).dict()
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding JSON response: {str(e)}")
-            return {"error": "Failed to generate environment"}
+            raise ValueError("Failed to generate environment: Invalid JSON response")
         except Exception as e:
             self.logger.error(f"Unexpected error in generate_environment: {str(e)}")
-            return {"error": "An unexpected error occurred"}
+            raise
 
-    async def process_student_interaction(self, environment: Dict[str, Any], interaction: str) -> Dict[str, Any]:
+    async def process_student_interaction(self, environment: Environment, interaction: str) -> Dict[str, Any]:
         try:
             self.logger.info(f"Processing student interaction: {interaction}")
             prompt = f"""
             Given this educational environment:
-            {json.dumps(environment)}
+            {json.dumps(environment.dict())}
             
             Process the following student interaction:
             {interaction}
@@ -67,7 +79,13 @@ class Academica:
             3. Suggests the next step or provides additional information
             4. Maintains engagement and encourages further exploration
             
-            Return the response as a JSON object.
+            Return the response as a JSON object with the following structure:
+            {{
+                "acknowledgment": "Acknowledgment of the student's action",
+                "feedback": "Appropriate feedback",
+                "next_step": "Suggestion for the next step",
+                "encouragement": "Encouragement for further exploration"
+            }}
             """
             
             response = await self.ai_api.chat_completion([
@@ -80,17 +98,17 @@ class Academica:
             return interaction_result
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding JSON response: {str(e)}")
-            return {"error": "Failed to process student interaction"}
+            raise ValueError("Failed to process student interaction: Invalid JSON response")
         except Exception as e:
             self.logger.error(f"Unexpected error in process_student_interaction: {str(e)}")
-            return {"error": "An unexpected error occurred"}
+            raise
 
-    async def generate_challenge(self, environment: Dict[str, Any], difficulty: str) -> Dict[str, Any]:
+    async def generate_challenge(self, environment: Environment, difficulty: str) -> Challenge:
         try:
             self.logger.info(f"Generating challenge at {difficulty} difficulty")
             prompt = f"""
             Based on this educational environment:
-            {json.dumps(environment)}
+            {json.dumps(environment.dict())}
             
             Generate a challenge at {difficulty} difficulty level.
             The challenge should:
@@ -99,11 +117,13 @@ class Academica:
             3. Be engaging and interactive
             4. Have clear objectives and success criteria
             
-            Return the challenge as a JSON object with:
-            - "description": A brief description of the challenge
-            - "objectives": List of specific goals to achieve
-            - "hints": Optional hints that can be provided to the student
-            - "solution": The correct approach or answer to the challenge
+            Return the challenge as a JSON object with the following structure:
+            {{
+                "description": "A brief description of the challenge",
+                "objectives": ["List", "of", "specific", "goals", "to", "achieve"],
+                "hints": ["Optional", "hints", "for", "the", "student"],
+                "solution": "The correct approach or answer to the challenge"
+            }}
             """
             
             response = await self.ai_api.chat_completion([
@@ -111,32 +131,36 @@ class Academica:
                 {"role": "user", "content": prompt}
             ])
             
-            challenge = json.loads(response['choices'][0]['message']['content'])
+            challenge_data = json.loads(response['choices'][0]['message']['content'])
+            challenge = Challenge(**challenge_data)
             self.logger.info(f"Successfully generated challenge")
             return challenge
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding JSON response: {str(e)}")
-            return {"error": "Failed to generate challenge"}
+            raise ValueError("Failed to generate challenge: Invalid JSON response")
         except Exception as e:
             self.logger.error(f"Unexpected error in generate_challenge: {str(e)}")
-            return {"error": "An unexpected error occurred"}
+            raise
 
 # Usage example:
 async def main():
     academica = Academica()
     
-    # Generate an environment
-    environment = await academica.generate_environment("Ecosystems", "Intermediate")
-    print("Generated Environment:", json.dumps(environment, indent=2))
-    
-    # Process a student interaction
-    interaction = "I want to learn more about the food chain in this ecosystem."
-    interaction_result = await academica.process_student_interaction(environment, interaction)
-    print("Interaction Result:", json.dumps(interaction_result, indent=2))
-    
-    # Generate a challenge
-    challenge = await academica.generate_challenge(environment, "medium")
-    print("Generated Challenge:", json.dumps(challenge, indent=2))
+    try:
+        # Generate an environment
+        environment = await academica.generate_environment("Ecosystems", "Intermediate")
+        print("Generated Environment:", json.dumps(environment, indent=2))
+        
+        # Process a student interaction
+        interaction = "I want to learn more about the food chain in this ecosystem."
+        interaction_result = await academica.process_student_interaction(Environment(**environment), interaction)
+        print("Interaction Result:", json.dumps(interaction_result, indent=2))
+        
+        # Generate a challenge
+        challenge = await academica.generate_challenge(Environment(**environment), "Intermediate")
+        print("Generated Challenge:", json.dumps(challenge.dict(), indent=2))
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     import asyncio
