@@ -167,7 +167,8 @@ const MusicVisualizer: React.FC = () => {
     <div className="relative w-full h-screen bg-black">
       <div ref={containerRef} className="w-full h-full" />
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50">
-        <input type="file" accept=".mp3,.wav" onChange={handleFileUpload} className="mb-2 text-white" />
+        <label htmlFor="audioFile" className="text-white">Choose an audio file:</label>
+        <input type="file" id="audioFile" accept=".mp3,.wav" onChange={handleFileUpload} className="mb-2 text-white" />
         <audio ref={audioRef} onTimeUpdate={handleTimeUpdate} onEnded={() => setIsPlaying(false)} />
         <div className="flex items-center space-x-4">
           <button onClick={togglePlayPause} className="text-white text-2xl focus:outline-none">

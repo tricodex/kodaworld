@@ -4,10 +4,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ActivityLayout from '@/components/ActivityLayout';
 import CharacterBase from '@/components/CharacterBase';
 import Image from 'next/image';
-import CulturalExpedition from './MinaAct/CulturalExpedition';
-import WorldMapQuiz from './MinaAct/WorldMapQuiz';
-import ClimateChallenge from './MinaAct/ClimateChallenge';
-import CountryGame from './MinaAct/CountryGame';
+// import CulturalExpedition from './MinaAct/CulturalExpedition';
+// import WorldMapQuiz from './MinaAct/WorldMapQuiz';
+// import ClimateChallenge from './MinaAct/ClimateChallenge';
+// import CountryGame from './MinaAct/CountryGame';
 import Koda from '@/components/Koda';
 import { sendChatMessage, getConversationHistory } from '@/api/chat';
 import { ChatMessage } from '@/types/api';
@@ -134,14 +134,14 @@ export default function MinaPage() {
     switch (currentActivity) {
       case "Koda":
         return <Koda studentId={STUDENT_ID} />;
-      case "WorldMapQuiz":
-        return <WorldMapQuiz />;
-      case "ClimateChallenge":
-        return <ClimateChallenge />;
-      case "CulturalExpedition":
-        return <CulturalExpedition />;
-      case "CountryGame":
-        return <CountryGame />;
+      // case "WorldMapQuiz":
+      //   return <WorldMapQuiz />;
+      // case "ClimateChallenge":
+      //   return <ClimateChallenge />;
+      // case "CulturalExpedition":
+      //   return <CulturalExpedition />;
+      // case "CountryGame":
+      //   return <CountryGame />;
       default:
         return null;
     }

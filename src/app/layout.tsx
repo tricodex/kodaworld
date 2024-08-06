@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Bungee_Spice, Londrina_Shadow } from "next/font/google";
 import "./globals.css";
 import "../styles/animalButtons.css";
+// import "../styles/shapegame.css";
+// import "../styles/characterBase.css";
+// import "../styles/curriculumPage.css";
 
 
 

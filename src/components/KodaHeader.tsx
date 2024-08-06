@@ -8,18 +8,22 @@ const KodaHeader: React.FC = () => {
   return (
     <header className="relative p-2"> 
       <div className="relative z-10 flex justify-between items-center">
-        <Link href="/" className="text-4xl font-bold text-white animate-fade-in ml-2" style={{ fontFamily: 'var(--font-bungee-spice)', letterSpacing: '+0.0001em' }}>
-          <span style={{ letterSpacing: 'inherit' }}>K</span>
-          <Image 
-            src="/koda_logo128.png" 
-            alt="Globe" 
-            width={40} 
-            height={20} 
-            className="inline-block align-middle" 
-          />
-          <span style={{ letterSpacing: 'inherit' }}>DA</span>
-        </Link>
+      <Link href="/" className="text-4xl font-bold text-white animate-fade-in ml-2" style={{ fontFamily: 'var(--font-bungee-spice)', letterSpacing: '+0.0001em' }}>
+      <span style={{ letterSpacing: 'inherit' }}>K</span>
+      <Image 
+        src="/koda_logo128.png" 
+        alt="Globe" 
+        width={40} 
+        height={20} 
+        className="inline-block align-middle" 
+        style={{ marginLeft: '-0.1em', marginRight: '-0.1em' }}
+      />
+      <span style={{ letterSpacing: 'inherit' }}>DA</span>
+    </Link>
         <div className="flex items-center space-x-4">
+        <Link href="/koda-bg" passHref>
+            <Button variant="ghost" className="text-black hover:bg-black/20">bg</Button>
+          </Link>
         <Link href="/about" passHref>
             <Button variant="ghost" className="text-black hover:bg-black/20">About</Button>
           </Link>

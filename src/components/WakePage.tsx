@@ -5,9 +5,9 @@ import ActivityLayout from '@/components/ActivityLayout';
 import CharacterBase from '@/components/CharacterBase';
 import Image from 'next/image';
 import MusicVisualizer from './WakeAct/MusicVisualizer';
-import RhythmGame from './WakeAct/RhythmGame';
+// import RhythmGame from './WakeAct/RhythmGame';
 import ComposeMelody from './WakeAct/ComposeMelody';
-import InstrumentQuiz from './WakeAct/InstrumentQuiz';
+// import InstrumentQuiz from './WakeAct/InstrumentQuiz';
 import Koda from '@/components/Koda';
 import { sendChatMessage, getConversationHistory } from '@/api/chat';
 import { ChatMessage } from '@/types/api';
@@ -49,7 +49,7 @@ export default function WakePage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  useEffect(scrollToBottom, [chatMessages]);
+  useEffect(scrollToBottom, [chatMessages, scrollToBottom]);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -134,12 +134,12 @@ export default function WakePage() {
     switch (currentActivity) {
       case "Koda":
         return <Koda studentId={STUDENT_ID} />;
-      case "RhythmGame":
-        return <RhythmGame />;
+      // case "RhythmGame":
+      //   return <RhythmGame />;
       case "ComposeMelody":
         return <ComposeMelody />;
-      case "InstrumentQuiz":
-        return <InstrumentQuiz />;
+      // case "InstrumentQuiz":
+      //   return <InstrumentQuiz />;
       case "MusicVisualizer":
         return <MusicVisualizer />;
       default:

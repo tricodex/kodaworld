@@ -1,3 +1,5 @@
+// spacepage.tsx
+
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
@@ -16,6 +18,8 @@ import {
   RingsReverse
 } from '@/styles/Space.styles';
 import KodaHeader from './KodaHeader';
+import SunPage from '@/components/SpaceAct/Sun';  
+import ActivityLayout from '@/components/ActivityLayout'; 
 
 interface Planet {
   name: string;
@@ -24,10 +28,11 @@ interface Planet {
   textColor: string;
   size: number;
   hasRing?: boolean;
+  link?: string;
 }
 
 const planets: Planet[] = [
-  {name: "SUN", gradient: "radial-gradient(circle, #ffd200 0%, #f7971e 50%, #ff0000 100%)", ringColors: "#ffd700, #ffa500, #ff4500, #ff0000", textColor: "#8B0000", size: 100},
+  {name: "SUN", gradient: "radial-gradient(circle, #ffd200 0%, #f7971e 50%, #ff0000 100%)", ringColors: "#ffd700, #ffa500, #ff4500, #ff0000", textColor: "#8B0000", size: 100, link: "/spaceact/sun"},
   {name: "MERCURY", gradient: "linear-gradient(45deg, #8c7e6d, #b8b8b8, #8c7e6d)", ringColors: "#696969, #a9a9a9, #d3d3d3, #696969", textColor: "#2F4F4F", size: 0.38},
   {name: "VENUS", gradient: "linear-gradient(45deg, #ffd85c, #e8a95c, #b8693d)", ringColors: "#ffd700, #daa520, #cd853f, #8b4513", textColor: "#8B4513", size: 0.95},
   {name: "EARTH", gradient: "linear-gradient(45deg, #4b6cb7, #1cb5e0, #2ecc71)", ringColors: "#1e90ff, #4169e1, #0000ff, #000080", textColor: "#000080", size: 1},
@@ -38,11 +43,9 @@ const planets: Planet[] = [
   {name: "NEPTUNE", gradient: "linear-gradient(45deg, #4169e1, #0000ff, #191970, #000080)", ringColors: "#1e90ff, #4169e1, #0000ff, #000080", textColor: "#0000CD", size: 3.88}
 ];
 
-const PlanetButton = ({ planet }: { planet: Planet }) => {
+const PlanetButton = ({ planet, onOpen }: { planet: Planet, onOpen: () => void }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
-  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
-
 
   return (
     <ButtonContainer style={{
@@ -50,7 +53,7 @@ const PlanetButton = ({ planet }: { planet: Planet }) => {
       '--ring-colors-reverse': planet.ringColors.split(', ').reverse().join(', ')
     } as React.CSSProperties}>
       <CentralButton 
-        href={`/planet/${planet.name.toLowerCase()}`}
+        href={planet.link ? planet.link : `/planet/${planet.name.toLowerCase()}`}
         className={`${isPressed ? 'pressed' : ''} ${planet.hasRing ? 'has-ring' : ''}`}
         style={{
           '--planet-gradient': planet.gradient,
@@ -58,7 +61,12 @@ const PlanetButton = ({ planet }: { planet: Planet }) => {
         } as React.CSSProperties}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={() => { setIsPressed(true); setTimeout(() => setIsPressed(false), 1000); }}
+        onClick={(e) => { 
+          e.preventDefault();
+          setIsPressed(true); 
+          setTimeout(() => setIsPressed(false), 1000); 
+          if (planet.name === "SUN") onOpen(); 
+        }}
       >
         <span style={{ color: planet.textColor, position: 'relative', zIndex: 2 }}>{planet.name}</span>
       </CentralButton>
@@ -83,11 +91,13 @@ const ScaleModel = () => (
 );
 
 const SpacePage = () => {
+  const [showSunPage, setShowSunPage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
   useEffect(() => {
     const svgFilter = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svgFilter.setAttribute("class", "filter");
@@ -118,10 +128,15 @@ const SpacePage = () => {
         <ScaleModel />
         <PlanetsContainer>
           {planets.map((planet, index) => (
-            <PlanetButton key={index} planet={planet} />
+            <PlanetButton key={index} planet={planet} onOpen={() => setShowSunPage(true)} />
           ))}
         </PlanetsContainer>
       </SolarSystemContainer>
+      {showSunPage && (
+        <ActivityLayout title="The Sun" onClose={() => setShowSunPage(false)}>
+          <SunPage />
+        </ActivityLayout>
+      )}
     </>
   );
 };

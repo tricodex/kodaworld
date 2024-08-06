@@ -4,10 +4,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ActivityLayout from '@/components/ActivityLayout';
 import CharacterBase from '@/components/CharacterBase';
 import Image from 'next/image';
-import HistoricalTimelineGame from './EllaAct/HistoricalTimelineGame';
-import AncientCivilizationPuzzle from './EllaAct/AncientCivilizationPuzzle';
-import HistoryChess from './EllaAct/HistoryChess';
-import HistoricalFigureQuiz from './EllaAct/HistoricalFigureQuiz';
+// import HistoricalTimelineGame from './EllaAct/HistoricalTimelineGame';
+// import AncientCivilizationPuzzle from './EllaAct/AncientCivilizationPuzzle';
+// import HistoryChess from './EllaAct/HistoryChess';
+// import HistoricalFigureQuiz from './EllaAct/HistoricalFigureQuiz';
 import Koda from '@/components/Koda';
 import { sendChatMessage, getConversationHistory } from '@/api/chat';
 import { ChatMessage } from '@/types/api';
@@ -134,14 +134,14 @@ export default function EllaPage() {
     switch (currentActivity) {
       case "Koda":
         return <Koda studentId={STUDENT_ID} />;
-      case "TimelineGame":
-        return <HistoricalTimelineGame />;
-      case "CivilizationPuzzle":
-        return <AncientCivilizationPuzzle />;
-      case "HistoricalFigureQuiz":
-        return <HistoricalFigureQuiz />;
-      case "HistoryChess":
-        return <HistoryChess />;
+      // case "TimelineGame":
+      //   return <HistoricalTimelineGame />;
+      // case "CivilizationPuzzle":
+      //   return <AncientCivilizationPuzzle />;
+      // case "HistoricalFigureQuiz":
+      //   return <HistoricalFigureQuiz />;
+      // case "HistoryChess":
+      //   return <HistoryChess />;
       default:
         return null;
     }

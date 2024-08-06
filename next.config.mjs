@@ -6,4 +6,13 @@ const nextConfig = {
     },
   };
   
-  export default nextConfig;
+  // Import the bundle analyzer
+  const withBundleAnalyzer = async () => {
+    const bundleAnalyzer = await import('@next/bundle-analyzer');
+    return bundleAnalyzer.default({
+      enabled: process.env.ANALYZE === 'true',
+    })(nextConfig);
+  };
+  
+  export default withBundleAnalyzer();
+  

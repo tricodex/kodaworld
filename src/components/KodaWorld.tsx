@@ -12,10 +12,8 @@ import {
 import { Search } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import KodaHeader from './KodaHeader';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { ChatMessage, ChatResponse } from '@/types/api';
 import { useCharacterRedirection } from './CharacterRedirection';
 
 interface AnimalButtonProps {
@@ -79,13 +77,14 @@ export default function HomePage() {
           <main className="container mx-auto px-4 mt-12">
             <div className="text-center mb-12">
               <h1 className="text-8xl font-bold mb-4 text-white animate-fade-in" style={{ fontFamily: 'var(--font-bungee-spice)', letterSpacing: '+0.001em' }}>
-                <span style={{ letterSpacing: 'inherit' }}>K</span>
+              <span style={{ letterSpacing: 'inherit' }}>K</span>
                 <Image 
                   src="/koda_logo128.png" 
                   alt="Globe" 
-                  width={90} 
+                  width={100} 
                   height={70} 
                   className="inline-block align-middle" 
+                  style={{ marginLeft: '-0.1em', marginRight: '-0.1em' }}
                 />
                 <span style={{ letterSpacing: 'inherit' }}>DA</span>
               </h1>
