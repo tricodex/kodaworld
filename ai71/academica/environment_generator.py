@@ -1,15 +1,62 @@
-# ai71/academica/environment_generator.py
-
-from ..ai71_api import AI71API
+from typing import Dict, Any, List
+from pydantic import BaseModel
+from ..api import OpenAIAPI  
 import json
 import logging
-from typing import Dict, Any
 
+class InteractiveElement(BaseModel):
+    type: str
+    description: str
+    interaction_method: str
 
-from ..models import Environment, Challenge
+class Scenario(BaseModel):
+    description: str
+    objectives: List[str]
+    challenges: List[str]
+
+class VisualComponent(BaseModel):
+    type: str
+    description: str
+    url: str
+
+class AuditoryComponent(BaseModel):
+    type: str
+    description: str
+    url: str
+
+class GroupActivity(BaseModel):
+    title: str
+    description: str
+    duration: str
+    materials: List[str]
+
+class Environment(BaseModel):
+    topic: str
+    complexity: str
+    description: str
+    elements: List[InteractiveElement]
+    scenarios: List[Scenario]
+    visual_components: List[VisualComponent]
+    auditory_components: List[AuditoryComponent]
+    group_activities: List[GroupActivity]
+
+class Challenge(BaseModel):
+    description: str
+    objectives: List[str]
+    difficulty: str
+    hints: List[str]
+    solution: str
+
+class StudentInteraction(BaseModel):
+    input: str
+    acknowledgment: str
+    feedback: str
+    next_step: str
+    encouragement: str
+
 class Academica:
     def __init__(self):
-        self.ai_api = AI71API()
+        self.ai_api = OpenAIAPI()  # Using the custom OpenAIAPI class
         self.logger = self._setup_logger()
 
     def _setup_logger(self):
@@ -21,147 +68,153 @@ class Academica:
         logger.addHandler(handler)
         return logger
 
-    async def generate_environment(self, topic: str, complexity: str) -> Dict[str, Any]:
+    def _generate_content(self, system_message: str, user_prompt: str) -> Dict[str, Any]:
         try:
-            self.logger.info(f"Generating environment for topic: {topic} at complexity: {complexity}")
-            prompt = f"""
-            Create an interactive educational environment for the topic: {topic}
-            At complexity level: {complexity}
-            
-            The environment should include:
-            1. A brief description of the main concept
-            2. Interactive elements that students can engage with
-            3. Potential scenarios or problems to solve
-            4. Visual or auditory components to enhance learning
-            5. Suggestions for group activities or discussions
-            
-            Return the environment details as a JSON object with the following structure:
-            {{
-                "topic": "{topic}",
-                "complexity": "{complexity}",
-                "description": "Brief description of the main concept",
-                "elements": ["List", "of", "interactive", "elements"],
-                "scenarios": ["List", "of", "potential", "scenarios"],
-                "visual_components": ["List", "of", "visual", "components"],
-                "auditory_components": ["List", "of", "auditory", "components"],
-                "group_activities": ["List", "of", "group", "activities"]
-            }}
-            """
-            
-            response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in creating engaging educational environments."},
-                {"role": "user", "content": prompt}
-            ])
-            
-            environment = json.loads(response['choices'][0]['message']['content'])
-            self.logger.info(f"Successfully generated environment for {topic}")
-            return Environment(**environment).dict()
+            response = self.ai_api.chat_completion(
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": user_prompt}
+                ],
+                model="gpt-4o-mini"
+            )
+            return json.loads(response['choices'][0]['message']['content'])
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding JSON response: {str(e)}")
-            raise ValueError("Failed to generate environment: Invalid JSON response")
+            raise ValueError("Failed to generate content: Invalid JSON response")
         except Exception as e:
-            self.logger.error(f"Unexpected error in generate_environment: {str(e)}")
+            self.logger.error(f"Unexpected error in content generation: {str(e)}")
             raise
 
-    async def process_student_interaction(self, environment: Environment, interaction: str) -> Dict[str, Any]:
-        try:
-            self.logger.info(f"Processing student interaction: {interaction}")
-            prompt = f"""
-            Given this educational environment:
-            {json.dumps(environment.dict())}
-            
-            Process the following student interaction:
-            {interaction}
-            
-            Provide a response that:
-            1. Acknowledges the student's action
-            2. Gives appropriate feedback
-            3. Suggests the next step or provides additional information
-            4. Maintains engagement and encourages further exploration
-            
-            Return the response as a JSON object with the following structure:
-            {{
-                "acknowledgment": "Acknowledgment of the student's action",
-                "feedback": "Appropriate feedback",
-                "next_step": "Suggestion for the next step",
-                "encouragement": "Encouragement for further exploration"
-            }}
-            """
-            
-            response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI guide in an interactive educational environment."},
-                {"role": "user", "content": prompt}
-            ])
-            
-            interaction_result = json.loads(response['choices'][0]['message']['content'])
-            self.logger.info("Successfully processed student interaction")
-            return interaction_result
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding JSON response: {str(e)}")
-            raise ValueError("Failed to process student interaction: Invalid JSON response")
-        except Exception as e:
-            self.logger.error(f"Unexpected error in process_student_interaction: {str(e)}")
-            raise
+    def generate_environment(self, topic: str, complexity: str) -> Environment:
+        system_message = """
+        You are an AI expert in creating immersive and engaging educational environments. Your task is to design a rich, interactive learning space that captivates students and facilitates deep understanding of the given topic. Focus on creating a multisensory experience that caters to various learning styles and encourages active participation.
+        """
 
-    async def generate_challenge(self, environment: Environment, difficulty: str) -> Challenge:
-        try:
-            self.logger.info(f"Generating challenge at {difficulty} difficulty")
-            prompt = f"""
-            Based on this educational environment:
-            {json.dumps(environment.dict())}
-            
-            Generate a challenge at {difficulty} difficulty level.
-            The challenge should:
-            1. Be related to the main concept of the environment
-            2. Require application of knowledge gained from the environment
-            3. Be engaging and interactive
-            4. Have clear objectives and success criteria
-            
-            Return the challenge as a JSON object with the following structure:
-            {{
-                "description": "A brief description of the challenge",
-                "objectives": ["List", "of", "specific", "goals", "to", "achieve"],
-                "hints": ["Optional", "hints", "for", "the", "student"],
-                "solution": "The correct approach or answer to the challenge"
-            }}
-            """
-            
-            response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in creating educational challenges."},
-                {"role": "user", "content": prompt}
-            ])
-            
-            challenge_data = json.loads(response['choices'][0]['message']['content'])
-            challenge = Challenge(**challenge_data)
-            self.logger.info(f"Successfully generated challenge")
-            return challenge
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding JSON response: {str(e)}")
-            raise ValueError("Failed to generate challenge: Invalid JSON response")
-        except Exception as e:
-            self.logger.error(f"Unexpected error in generate_challenge: {str(e)}")
-            raise
+        user_prompt = f"""
+        Create an exceptionally detailed and interactive educational environment for the topic: {topic}
+        At complexity level: {complexity}
+        
+        Provide a JSON object with the following structure:
+        {{
+            "topic": "{topic}",
+            "complexity": "{complexity}",
+            "description": "A vivid, engaging description of the learning environment",
+            "elements": [
+                {{
+                    "type": "Type of interactive element",
+                    "description": "Detailed description of the element",
+                    "interaction_method": "How students interact with this element"
+                }}
+            ],
+            "scenarios": [
+                {{
+                    "description": "A compelling scenario or problem to solve",
+                    "objectives": ["List", "of", "learning", "objectives"],
+                    "challenges": ["Specific", "challenges", "within", "the", "scenario"]
+                }}
+            ],
+            "visual_components": [
+                {{
+                    "type": "Type of visual (e.g., 3D model, animation, infographic)",
+                    "description": "Description of the visual component",
+                    "url": "Placeholder URL for the visual resource"
+                }}
+            ],
+            "auditory_components": [
+                {{
+                    "type": "Type of audio (e.g., narration, ambient sound, music)",
+                    "description": "Description of the auditory component",
+                    "url": "Placeholder URL for the audio resource"
+                }}
+            ],
+            "group_activities": [
+                {{
+                    "title": "Title of the group activity",
+                    "description": "Detailed description of the activity",
+                    "duration": "Estimated duration",
+                    "materials": ["List", "of", "required", "materials"]
+                }}
+            ]
+        }}
+        
+        Ensure each component is richly detailed and designed to maximize student engagement and learning outcomes.
+        """
+
+        environment_data = self._generate_content(system_message, user_prompt)
+        return Environment(**environment_data)
+
+    def process_student_interaction(self, environment: Environment, interaction: str) -> StudentInteraction:
+        system_message = """
+        You are an AI-powered educational guide, expertly designed to facilitate student learning in interactive environments. Your responses should be encouraging, insightful, and tailored to the student's actions and the learning context. Aim to deepen understanding, promote critical thinking, and maintain high engagement.
+        """
+
+        user_prompt = f"""
+        Given this educational environment:
+        {json.dumps(environment.dict(), indent=2)}
+        
+        Process the following student interaction:
+        {interaction}
+        
+        Provide a JSON response with the following structure:
+        {{
+            "input": "{interaction}",
+            "acknowledgment": "A personalized acknowledgment of the student's action",
+            "feedback": "Detailed, constructive feedback that relates to the learning objectives",
+            "next_step": "A thought-provoking suggestion for the next step in their learning journey",
+            "encouragement": "An motivational message to inspire continued exploration and learning"
+        }}
+        
+        Ensure your response is tailored to the specific elements and scenarios of the given environment.
+        """
+
+        interaction_data = self._generate_content(system_message, user_prompt)
+        return StudentInteraction(**interaction_data)
+
+    def generate_challenge(self, environment: Environment, difficulty: str) -> Challenge:
+        system_message = """
+        You are an AI specialist in crafting educational challenges that push the boundaries of student understanding. Your challenges should be thought-provoking, relevant to the learning environment, and calibrated to the specified difficulty level. Design challenges that require critical thinking, creativity, and application of knowledge.
+        """
+
+        user_prompt = f"""
+        Based on this educational environment:
+        {json.dumps(environment.dict(), indent=2)}
+        
+        Generate an engaging challenge at {difficulty} difficulty level.
+        
+        Provide a JSON object with the following structure:
+        {{
+            "description": "A compelling description of the challenge that hooks the student's interest",
+            "objectives": ["List", "of", "specific", "learning", "objectives", "for", "this", "challenge"],
+            "difficulty": "{difficulty}",
+            "hints": ["Carefully", "crafted", "hints", "that", "guide", "without", "giving", "away", "the", "solution"],
+            "solution": "A detailed explanation of the optimal approach or answer to the challenge"
+        }}
+        
+        Ensure the challenge is deeply integrated with the environment's theme and components, providing a seamless and immersive learning experience.
+        """
+
+        challenge_data = self._generate_content(system_message, user_prompt)
+        return Challenge(**challenge_data)
 
 # Usage example:
-async def main():
+def main():
     academica = Academica()
     
     try:
         # Generate an environment
-        environment = await academica.generate_environment("Ecosystems", "Intermediate")
-        print("Generated Environment:", json.dumps(environment, indent=2))
+        environment = academica.generate_environment("Quantum Computing", "Advanced")
+        print("Generated Environment:", json.dumps(environment.dict(), indent=2))
         
         # Process a student interaction
-        interaction = "I want to learn more about the food chain in this ecosystem."
-        interaction_result = await academica.process_student_interaction(Environment(**environment), interaction)
-        print("Interaction Result:", json.dumps(interaction_result, indent=2))
+        interaction = "I'm curious about how quantum entanglement affects computation speed."
+        interaction_result = academica.process_student_interaction(environment, interaction)
+        print("Interaction Result:", json.dumps(interaction_result.dict(), indent=2))
         
         # Generate a challenge
-        challenge = await academica.generate_challenge(Environment(**environment), "Intermediate")
+        challenge = academica.generate_challenge(environment, "Expert")
         print("Generated Challenge:", json.dumps(challenge.dict(), indent=2))
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()

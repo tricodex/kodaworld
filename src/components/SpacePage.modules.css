@@ -1,0 +1,98 @@
+.gameContainer {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #000000;
+    padding: 16px;
+  }
+  
+  .title {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 16px;
+    text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
+  }
+  
+  .score {
+    font-size: 2rem;
+    color: #ffffff;
+    margin-bottom: 16px;
+  }
+  
+  .modeToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  
+  .modeButton {
+    margin-left: 16px;
+    padding: 8px 16px;
+    background-color: #00ffff;
+    color: #000000;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .modeButton:hover {
+    background-color: #00cccc;
+  }
+  
+  .grid {
+    position: relative;
+    background-color: rgba(0, 255, 255, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .gridInner {
+    position: relative;
+  }
+  
+  .cell {
+    position: absolute;
+    background-color: rgba(0, 255, 255, 0.2);
+    border-radius: 8px;
+  }
+  
+  .tile {
+    position: absolute;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  
+  .message {
+    margin-top: 16px;
+    color: #ffffff;
+    font-size: 1rem;
+    text-align: center;
+  }
+  
+  .button {
+    margin-top: 16px;
+    padding: 16px 32px;
+    background-color: #00ffff;
+    color: #000000;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .button:hover {
+    background-color: #00cccc;
+  }

@@ -1,16 +1,38 @@
-# ai71/gamification/system.py
-
-from ..ai71_api import AI71API
+from ..api import OpenAIAPI
+from pydantic import BaseModel, Field
+from typing import Dict, List, Optional
 import json
-import asyncio
 import logging
-from typing import Dict, List
+import asyncio
+
+class Achievement(BaseModel):
+    id: str
+    name: str
+    description: str
+    criteria: str
+    points: int
+    badge_url: str
+
+class Challenge(BaseModel):
+    id: str
+    title: str
+    description: str
+    difficulty: int = Field(..., ge=1, le=5)
+    rewards: Dict[str, int]
+    prerequisites: List[str]
+
+class UserProgress(BaseModel):
+    achievements: List[str]
+    points: int
+    level: int
+    completed_challenges: List[str]
 
 class GamificationSystem:
     def __init__(self):
-        self.ai_api = AI71API()
+        self.ai_api = OpenAIAPI()
         self.logger = self._setup_logger()
-        self.achievement_cache: Dict[str, Dict] = {}
+        self.achievement_cache: Dict[str, List[Achievement]] = {}
+        self.challenge_cache: Dict[str, List[Challenge]] = {}
 
     def _setup_logger(self):
         logger = logging.getLogger(__name__)
@@ -21,184 +43,243 @@ class GamificationSystem:
         logger.addHandler(handler)
         return logger
 
-    async def generate_achievement_system(self, curriculum: dict) -> dict:
+    async def generate_achievement_system(self, curriculum: dict) -> List[Achievement]:
         try:
             curriculum_hash = hash(json.dumps(curriculum, sort_keys=True))
             if curriculum_hash in self.achievement_cache:
                 self.logger.info("Using cached achievement system")
                 return self.achievement_cache[curriculum_hash]
 
-            prompt = f"""
-            Create a comprehensive achievement system for this curriculum:
-            {json.dumps(curriculum)}
-            
-            The achievement system should include:
-            1. A set of badges or awards tied to learning milestones
-            2. Progressive challenges that increase in difficulty
-            3. Hidden achievements to encourage exploration
-            4. Social achievements for collaborative work
-            5. A points system that reflects both effort and mastery
-            6. Levels or ranks that students can progress through
-            7. Customizable avatars or profiles that reflect achievements
-            8. Leaderboards for friendly competition
-            9. Daily or weekly quests to encourage regular engagement
-            10. A reward system for consistent learning streaks
-            
-            Return the achievement system as a detailed JSON object.
+            system_message = """
+            You are an AI expert in gamification for education. Your task is to create a comprehensive and engaging achievement system for a given curriculum. Focus on creating achievements that motivate students, track progress, and enhance the learning experience.
             """
+
+            user_prompt = f"""
+            Create a comprehensive achievement system for this curriculum:
+            {json.dumps(curriculum, indent=2)}
             
+            Generate a list of 15-20 achievements that cover the following aspects:
+            1. Learning milestones tied to curriculum progress
+            2. Skill mastery in specific areas
+            3. Consistent engagement and participation
+            4. Collaborative and social learning
+            5. Creative problem-solving and critical thinking
+            6. Personal growth and self-improvement
+
+            For each achievement, provide:
+            - A unique ID (e.g., "ACH_001")
+            - A catchy, motivating name
+            - A clear, concise description
+            - Specific criteria for unlocking the achievement
+            - Point value (between 10 and 1000)
+            - A description of the badge icon (to be used as a placeholder URL)
+
+            Return the list of achievements as a JSON array of objects, each following this structure:
+            {{
+                "id": "string",
+                "name": "string",
+                "description": "string",
+                "criteria": "string",
+                "points": integer,
+                "badge_url": "string"
+            }}
+            """
+
             response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in gamification for education."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_prompt}
             ])
             
-            achievement_system = json.loads(response['choices'][0]['message']['content'])
-            self.achievement_cache[curriculum_hash] = achievement_system
+            achievements = [Achievement(**ach) for ach in json.loads(response['choices'][0]['message']['content'])]
+            self.achievement_cache[curriculum_hash] = achievements
             self.logger.info("Generated new achievement system")
-            return achievement_system
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding JSON response: {str(e)}")
-            return {"error": "Failed to generate achievement system"}
+            return achievements
         except Exception as e:
-            self.logger.error(f"Unexpected error in generate_achievement_system: {str(e)}")
-            return {"error": "An unexpected error occurred"}
+            self.logger.error(f"Error in generate_achievement_system: {str(e)}")
+            raise
 
-    async def update_student_achievements(self, student_id: str, progress: Dict[str, float], achievement_system: Dict) -> Dict[str, List[str]]:
+    async def update_student_achievements(self, student_id: str, progress: UserProgress, achievements: List[Achievement]) -> Dict[str, List[str]]:
         try:
-            prompt = f"""
-            Given this student's progress:
-            {json.dumps(progress)}
-            
-            And this achievement system:
-            {json.dumps(achievement_system)}
-            
-            Determine which new achievements the student has unlocked.
-            Return a JSON object with two lists:
-            1. "unlocked": New achievements that the student has just unlocked
-            2. "progress": Achievements that the student is making progress towards, with their current progress
+            system_message = """
+            You are an AI expert in analyzing educational achievements. Your task is to determine which new achievements a student has unlocked based on their current progress and the available achievements.
             """
+
+            user_prompt = f"""
+            Given this student's progress:
+            {json.dumps(progress.dict(), indent=2)}
             
+            And these available achievements:
+            {json.dumps([ach.dict() for ach in achievements], indent=2)}
+            
+            Determine which new achievements the student has unlocked and which they are making progress towards.
+            Return a JSON object with two lists:
+            1. "unlocked": IDs of new achievements that the student has just unlocked
+            2. "in_progress": IDs of achievements the student is making progress towards, sorted by how close they are to unlocking (closest first)
+
+            Ensure your response is a valid JSON object and only includes achievement IDs that exist in the provided list.
+            """
+
             response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in analyzing educational achievements."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_prompt}
             ])
             
             updates = json.loads(response['choices'][0]['message']['content'])
             self.logger.info(f"Updated achievements for student {student_id}")
             return updates
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding JSON response: {str(e)}")
-            return {"error": "Failed to update student achievements"}
         except Exception as e:
-            self.logger.error(f"Unexpected error in update_student_achievements: {str(e)}")
-            return {"error": "An unexpected error occurred"}
+            self.logger.error(f"Error in update_student_achievements: {str(e)}")
+            raise
 
-    async def generate_personalized_challenges(self, student_id: str, progress: Dict[str, float], achievement_system: Dict) -> List[Dict]:
+    async def generate_personalized_challenges(self, student_id: str, progress: UserProgress, achievements: List[Achievement]) -> List[Challenge]:
         try:
-            prompt = f"""
+            system_message = """
+            You are an AI expert in creating educational challenges. Your task is to generate personalized, engaging challenges for a student based on their current progress and available achievements.
+            """
+
+            user_prompt = f"""
             Based on this student's progress:
-            {json.dumps(progress)}
+            {json.dumps(progress.dict(), indent=2)}
             
-            And this achievement system:
-            {json.dumps(achievement_system)}
+            And these available achievements:
+            {json.dumps([ach.dict() for ach in achievements], indent=2)}
             
             Generate 3 personalized challenges for the student that are:
             1. Challenging but achievable given their current progress
-            2. Aligned with their learning goals
-            3. Designed to unlock new achievements
-            
-            Return the challenges as a JSON array of objects, each with:
-            - "title": A catchy title for the challenge
-            - "description": A brief description of what the student needs to do
-            - "difficulty": An integer from 1-5 representing the challenge difficulty
-            - "rewards": What the student will earn for completing the challenge
+            2. Aligned with their learning goals and current level
+            3. Designed to help unlock new achievements or make progress towards them
+
+            For each challenge, provide:
+            - A unique ID (e.g., "CHL_001")
+            - A catchy, motivating title
+            - A clear, concise description of what the student needs to do
+            - A difficulty level (integer from 1-5)
+            - Rewards (points and/or progress towards specific achievements)
+            - Prerequisites (achievement IDs or level requirements)
+
+            Return the challenges as a JSON array of objects, each following this structure:
+            {{
+                "id": "string",
+                "title": "string",
+                "description": "string",
+                "difficulty": integer,
+                "rewards": {{ "points": integer, "achievements": ["string"] }},
+                "prerequisites": ["string"]
+            }}
             """
-            
+
             response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in creating educational challenges."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_prompt}
             ])
             
-            challenges = json.loads(response['choices'][0]['message']['content'])
+            challenges = [Challenge(**chl) for chl in json.loads(response['choices'][0]['message']['content'])]
             self.logger.info(f"Generated personalized challenges for student {student_id}")
             return challenges
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding JSON response: {str(e)}")
-            return [{"error": "Failed to generate personalized challenges"}]
         except Exception as e:
-            self.logger.error(f"Unexpected error in generate_personalized_challenges: {str(e)}")
-            return [{"error": "An unexpected error occurred"}]
+            self.logger.error(f"Error in generate_personalized_challenges: {str(e)}")
+            raise
 
-    async def calculate_engagement_score(self, student_id: str, activity_log: List[Dict]) -> float:
+    async def calculate_engagement_score(self, student_id: str, activity_log: List[Dict], progress: UserProgress) -> float:
         try:
-            prompt = f"""
+            system_message = """
+            You are an AI expert in analyzing student engagement in educational platforms. Your task is to calculate an engagement score based on a student's activity log and overall progress.
+            """
+
+            user_prompt = f"""
             Given this student's activity log:
-            {json.dumps(activity_log)}
+            {json.dumps(activity_log, indent=2)}
+            
+            And their overall progress:
+            {json.dumps(progress.dict(), indent=2)}
             
             Calculate an engagement score from 0 to 100 based on:
-            1. Frequency of logins
+            1. Frequency and consistency of logins
             2. Time spent on learning activities
             3. Diversity of topics explored
-            4. Completion rate of started activities
+            4. Completion rate of started activities and challenges
             5. Participation in social or collaborative activities
-            
-            Return the engagement score as a single float value.
+            6. Progress towards achievements and leveling up
+            7. Responsiveness to personalized challenges
+
+            Provide your reasoning for the score, breaking it down into the categories mentioned above.
+            Then, return the final engagement score as a single float value between 0 and 100.
+
+            Your response should be in this format:
+            {{
+                "reasoning": {{
+                    "login_frequency": {{ "score": float, "explanation": "string" }},
+                    "time_spent": {{ "score": float, "explanation": "string" }},
+                    "topic_diversity": {{ "score": float, "explanation": "string" }},
+                    "completion_rate": {{ "score": float, "explanation": "string" }},
+                    "social_participation": {{ "score": float, "explanation": "string" }},
+                    "achievement_progress": {{ "score": float, "explanation": "string" }},
+                    "challenge_responsiveness": {{ "score": float, "explanation": "string" }}
+                }},
+                "final_score": float
+            }}
             """
-            
+
             response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in analyzing student engagement."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_prompt}
             ])
             
-            engagement_score = float(response['choices'][0]['message']['content'])
+            result = json.loads(response['choices'][0]['message']['content'])
+            engagement_score = result['final_score']
             self.logger.info(f"Calculated engagement score for student {student_id}: {engagement_score}")
             return engagement_score
-        except ValueError as e:
-            self.logger.error(f"Error converting engagement score to float: {str(e)}")
-            return 0.0
         except Exception as e:
-            self.logger.error(f"Unexpected error in calculate_engagement_score: {str(e)}")
-            return 0.0
+            self.logger.error(f"Error in calculate_engagement_score: {str(e)}")
+            raise
 
-# Usage example:
+# Usage example
 async def main():
-    gamification_system = GamificationSystem()
+    gs = GamificationSystem()
     
-    # Example curriculum
+    # Sample curriculum
     curriculum = {
-        "subject": "Biology",
-        "units": ["Cell Biology", "Genetics", "Ecology"],
+        "subject": "Computer Science",
+        "modules": ["Programming Basics", "Data Structures", "Algorithms"],
         "difficulty": "Intermediate"
     }
     
-    achievement_system = await gamification_system.generate_achievement_system(curriculum)
-    print("Achievement System:", json.dumps(achievement_system, indent=2))
-    
-    # Example student progress
-    student_id = "12345"
-    progress = {
-        "Cell Biology": 0.8,
-        "Genetics": 0.5,
-        "Ecology": 0.2
-    }
-    
-    updates = await gamification_system.update_student_achievements(student_id, progress, achievement_system)
-    print("Achievement Updates:", json.dumps(updates, indent=2))
-    
-    challenges = await gamification_system.generate_personalized_challenges(student_id, progress, achievement_system)
-    print("Personalized Challenges:", json.dumps(challenges, indent=2))
-    
-    # Example activity log
-    activity_log = [
-        {"timestamp": "2024-03-01T10:00:00", "activity": "login"},
-        {"timestamp": "2024-03-01T10:15:00", "activity": "start_lesson", "topic": "Cell Biology"},
-        {"timestamp": "2024-03-01T11:00:00", "activity": "complete_lesson", "topic": "Cell Biology"},
-        {"timestamp": "2024-03-02T14:00:00", "activity": "login"},
-        {"timestamp": "2024-03-02T14:30:00", "activity": "start_quiz", "topic": "Genetics"}
-    ]
-    
-    engagement_score = await gamification_system.calculate_engagement_score(student_id, activity_log)
-    print(f"Engagement Score: {engagement_score}")
+    try:
+        # Generate achievement system
+        achievements = await gs.generate_achievement_system(curriculum)
+        print("Generated Achievements:")
+        for ach in achievements:
+            print(f"- {ach.name}: {ach.description}")
+
+        # Sample user progress
+        progress = UserProgress(
+            achievements=["ACH_001", "ACH_002"],
+            points=150,
+            level=2,
+            completed_challenges=["CHL_001"]
+        )
+
+        # Update student achievements
+        updates = await gs.update_student_achievements("student123", progress, achievements)
+        print("\nAchievement Updates:", updates)
+
+        # Generate personalized challenges
+        challenges = await gs.generate_personalized_challenges("student123", progress, achievements)
+        print("\nPersonalized Challenges:")
+        for chl in challenges:
+            print(f"- {chl.title}: {chl.description}")
+
+        # Calculate engagement score
+        activity_log = [
+            {"timestamp": "2023-05-01T10:00:00Z", "action": "login"},
+            {"timestamp": "2023-05-01T10:30:00Z", "action": "complete_lesson", "lesson_id": "L001"},
+            {"timestamp": "2023-05-02T14:00:00Z", "action": "start_challenge", "challenge_id": "CHL_002"}
+        ]
+        engagement_score = await gs.calculate_engagement_score("student123", activity_log, progress)
+        print(f"\nEngagement Score: {engagement_score}")
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     asyncio.run(main())

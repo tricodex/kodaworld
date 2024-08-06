@@ -1,5 +1,177 @@
 // spacepage.tsx
+'use client';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import styles from '@/styles/SpacePage.module.css';
+import KodaHeader from './KodaHeader';
+import SunPage from '@/components/SpaceAct/Sun';  
+import ActivityLayout from '@/components/ActivityLayout'; 
+import styled, { createGlobalStyle, keyframes } from 'styled-components';
+import Link from 'next/link';
 
+// Define custom CSS properties
+interface CustomCSS extends React.CSSProperties {
+  '--ring-colors'?: string;
+  '--ring-colors-reverse'?: string;
+  '--planet-gradient'?: string;
+  '--planet-size'?: string;
+}
+
+// Global style
+const GlobalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+  :root {
+    --width: 0.5vmin;
+    --duration: 10s;
+    --button-size: 100px;
+    --ring-size: 200px;
+  }
+
+  body { margin: 0; background: #000; font-family: Arial, sans-serif; color: #fff; overflow-x: hidden; }
+`;
+
+// Keyframes
+const rotate = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const enhancedRing = keyframes`
+  0%, 100% { transform: rotateY(var(--start)) rotateX(var(--start)) rotateZ(var(--start)) scale(1); }
+  25%, 75% { transform: rotateY(calc(var(--start) + 90deg)) rotateX(calc(var(--start) + 90deg)) rotateZ(calc(var(--start) + 90deg)) scale(1.2); }
+  50% { transform: rotateY(calc(var(--start) + 180deg)) rotateX(calc(var(--start) + 180deg)) rotateZ(calc(var(--start) + 180deg)) scale(1); }
+`;
+
+const enhancedRingReverse = keyframes`
+  0%, 100% { transform: rotateY(calc(360deg - var(--start))) rotateX(calc(360deg - var(--start))) rotateZ(calc(360deg - var(--start))) scale(1); }
+  25%, 75% { transform: rotateY(calc(270deg - var(--start))) rotateX(calc(270deg - var(--start))) rotateZ(calc(270deg - var(--start))) scale(1.1); }
+  50% { transform: rotateY(calc(180deg - var(--start))) rotateX(calc(180deg - var(--start))) rotateZ(calc(180deg - var(--start))) scale(1); }
+`;
+
+// Styled components that couldn't be converted to regular CSS
+const ButtonContainer = styled.div<{ style?: CustomCSS }>`
+  position: relative;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px;
+`;
+
+const CentralButton = styled(Link)<{ style?: CustomCSS }>`
+  position: relative;
+  width: var(--button-size);
+  height: var(--button-size);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--planet-gradient);
+    border-radius: 50%;
+    animation: ${rotate} 20s linear infinite;
+  }
+
+  &.has-ring::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 140%;
+    height: 40px;
+    background: linear-gradient(to right, transparent 10%, #ffd700 50%, transparent 90%);
+    transform: translate(-50%, -50%) rotate3d(1, 0, 0, 75deg);
+    opacity: 0.7;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+`;
+
+const Rings = styled.div<{ style?: CustomCSS }>`
+  position: absolute;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  border-radius: 50%;
+  filter: url(#blurFilter);
+
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    --width-ratio: 1;
+    border: calc(var(--width) * var(--width-ratio)) solid transparent;
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    --start: 180deg;
+    --scale: 1;
+  }
+
+  &::before, &::after {
+    background: conic-gradient(from calc(var(--value) * 3), var(--ring-colors)) border-box;
+    animation: ${enhancedRing} var(--duration) ease-in-out infinite;
+    --value: var(--start);
+    transform: rotateY(var(--value)) rotateX(var(--value)) rotateZ(var(--value)) scale(var(--scale));
+  }
+
+  &::before { --start: 180deg; }
+  &::after { --start: 90deg; }
+`;
+
+const RingsReverse = styled(Rings)`
+  &::before, &::after {
+    background: conic-gradient(from calc(var(--value-reverse) * 3), var(--ring-colors-reverse)) border-box;
+    animation: ${enhancedRingReverse} var(--duration) ease-in-out infinite;
+    --value-reverse: calc(360deg - var(--start));
+    transform: rotateY(var(--value-reverse)) rotateX(var(--value-reverse)) rotateZ(var(--value-reverse)) scale(var(--scale));
+  }
+`;
+
+// ... (rest of the component code remains the same)
+
+const SpacePage = () => {
+  // ... (component logic remains the same)
+
+  return (
+    <>
+      <KodaHeader />
+      <GlobalStyle />
+      <div className={styles.solarSystemContainer}>
+        <h1 className={styles.title}>Solar System</h1>
+        <div className={styles.solarSystemInfo}>
+          {/* ... (info content remains the same) */}
+        </div>
+        <ScaleModel />
+        <div className={styles.planetsContainer}>
+          {planets.map((planet, index) => (
+            <PlanetButton key={index} planet={planet} onOpen={() => setShowSunPage(true)} />
+          ))}
+        </div>
+      </div>
+      {showSunPage && (
+        <ActivityLayout title="The Sun" onClose={() => setShowSunPage(false)}>
+          <SunPage />
+        </ActivityLayout>
+      )}
+    </>
+  );
+};
+
+export default SpacePage;
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {

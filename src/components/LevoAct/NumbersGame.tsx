@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import styles from './NumbersGame.module.css';
 
 const GRID_SIZE = 4;
 
@@ -10,11 +11,14 @@ interface Tile {
   id: number;
 }
 
+type GameMode = 'normal' | 'blitz';
+
 const NumbersGame: React.FC = () => {
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [gameMode, setGameMode] = useState<GameMode>('normal');
 
   const generateNewTile = useCallback((currentTiles: Tile[]): Tile => {
     const emptyCells = [];
@@ -39,77 +43,78 @@ const NumbersGame: React.FC = () => {
       const newTiles = [...prevTiles];
       let moved = false;
       let scoreIncrease = 0;
-  
-      const getNextPosition = (row: number, col: number): [number, number] => {
-        switch (direction) {
-          case 'up': return [row - 1, col];
-          case 'down': return [row + 1, col];
-          case 'left': return [row, col - 1];
-          case 'right': return [row, col + 1];
-        }
+
+      const traversalX = direction === 'right' ? [3, 2, 1, 0] : [0, 1, 2, 3];
+      const traversalY = direction === 'down' ? [3, 2, 1, 0] : [0, 1, 2, 3];
+
+      const findFarthestPosition = (row: number, col: number, vector: [number, number]): [number, number] => {
+        let previous: [number, number] = [row, col];
+
+        do {
+          previous = [row, col];
+          row += vector[0];
+          col += vector[1];
+        } while (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE &&
+                 !newTiles.some(t => t.row === row && t.col === col));
+
+        return previous;
       };
-  
-      const sortedTiles = newTiles.sort((a, b) => {
-        if (direction === 'up' || direction === 'down') {
-          return direction === 'up' ? a.row - b.row : b.row - a.row;
-        } else {
-          return direction === 'left' ? a.col - b.col : b.col - a.col;
-        }
-      });
-  
-      for (const tile of sortedTiles) {
-        let { row, col } = tile;
-        let [nextRow, nextCol] = getNextPosition(row, col);
-        let merged = false;
-  
-        while (
-          nextRow >= 0 && nextRow < GRID_SIZE &&
-          nextCol >= 0 && nextCol < GRID_SIZE && !merged
-        ) {
-          const targetTile = newTiles.find(t => t.row === nextRow && t.col === nextCol);
-          
-          if (!targetTile) {
-            row = nextRow;
-            col = nextCol;
-            moved = true;
-          } else if (targetTile.value === tile.value && !merged) {
-            targetTile.value *= 2;
-            scoreIncrease += targetTile.value;
-            newTiles.splice(newTiles.indexOf(tile), 1);
-            moved = true;
-            merged = true;
-          } else {
-            break;
-          }
-  
-          [nextRow, nextCol] = getNextPosition(row, col);
-        }
-  
-        if (tile.row !== row || tile.col !== col) {
-          tile.row = row;
-          tile.col = col;
+
+      const moveTile = (tile: Tile) => {
+        const vector: [number, number] = {
+          'up': [-1, 0],
+          'down': [1, 0],
+          'left': [0, -1],
+          'right': [0, 1]
+        }[direction];
+
+        const [newRow, newCol] = findFarthestPosition(tile.row, tile.col, vector);
+
+        if (newRow !== tile.row || newCol !== tile.col) {
           moved = true;
         }
-      }
-  
+
+        const targetTile = newTiles.find(t => t.row === newRow + vector[0] && t.col === newCol + vector[1]);
+
+        if (targetTile && targetTile.value === tile.value) {
+          targetTile.value *= 2;
+          scoreIncrease += targetTile.value;
+          newTiles.splice(newTiles.indexOf(tile), 1);
+          moved = true;
+        } else {
+          tile.row = newRow;
+          tile.col = newCol;
+        }
+      };
+
+      traversalY.forEach(y => {
+        traversalX.forEach(x => {
+          const tile = newTiles.find(t => t.row === y && t.col === x);
+          if (tile) {
+            moveTile(tile);
+          }
+        });
+      });
+
       if (moved) {
         const newTile = generateNewTile(newTiles);
         newTiles.push(newTile);
+        
+        if (gameMode === 'blitz' && Math.random() < 0.5) {
+          const extraTile = generateNewTile(newTiles);
+          newTiles.push(extraTile);
+        }
+        
         setScore(prevScore => prevScore + scoreIncrease);
       }
-  
+
       if (newTiles.length === GRID_SIZE * GRID_SIZE && !canMove(newTiles)) {
         setGameOver(true);
       }
-  
-      console.log("Tiles after move:", newTiles);
-      console.log("Score:", score);
-      console.log("Game Over:", gameOver);
-  
+
       return newTiles;
     });
-  }, [generateNewTile]);
-  
+  }, [generateNewTile, gameMode]);
 
   const canMove = (tiles: Tile[]): boolean => {
     for (let i = 0; i < tiles.length; i++) {
@@ -132,7 +137,6 @@ const NumbersGame: React.FC = () => {
     return false;
   };
 
-  // The assistant resets the game state
   const resetGame = useCallback(() => {
     const initialTiles = [];
     for (let i = 0; i < 2; i++) {
@@ -143,6 +147,11 @@ const NumbersGame: React.FC = () => {
     setScore(0);
     setGameOver(false);
   }, [generateNewTile]);
+
+  const toggleGameMode = () => {
+    setGameMode(prevMode => prevMode === 'normal' ? 'blitz' : 'normal');
+    resetGame();
+  };
 
   useEffect(() => {
     resetGame();
@@ -177,30 +186,21 @@ const NumbersGame: React.FC = () => {
   const tileSize = cellSize * 0.9;
 
   return (
-    <div 
-      id="game-container"
-      className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-4"
-    >
-      <h1 className="text-3xl font-bold text-white mb-4">2048</h1>
-      <div className="text-2xl text-white mb-4">Score: {score}</div>
-      <div 
-        className="relative bg-gray-800 rounded-lg shadow-lg overflow-hidden flex items-center justify-center"
-        style={{
-          width: `${containerSize.width}px`,
-          height: `${containerSize.height}px`,
-        }}
-      >
-        <div
-          className="relative"
-          style={{
-            width: `${gridSize}px`,
-            height: `${gridSize}px`,
-          }}
-        >
+    <div id="game-container" className={styles.gameContainer}>
+      <h1 className={styles.title}>2048</h1>
+      <div className={styles.score}>Score: {score}</div>
+      <div className={styles.modeToggle}>
+        <span>Mode: {gameMode === 'normal' ? 'Normal' : 'Blitz'} 🕹️</span>
+        <button onClick={toggleGameMode} className={styles.modeButton}>
+          Switch to {gameMode === 'normal' ? 'Blitz' : 'Normal'}
+        </button>
+      </div>
+      <div className={styles.grid} style={{ width: `${containerSize.width}px`, height: `${containerSize.height}px` }}>
+        <div className={styles.gridInner} style={{ width: `${gridSize}px`, height: `${gridSize}px` }}>
           {[...Array(GRID_SIZE * GRID_SIZE)].map((_, index) => (
             <div
               key={index}
-              className="absolute bg-gray-700 rounded-lg"
+              className={styles.cell}
               style={{
                 width: `${cellSize - 4}px`,
                 height: `${cellSize - 4}px`,
@@ -212,7 +212,7 @@ const NumbersGame: React.FC = () => {
           {tiles.map(tile => (
             <motion.div
               key={tile.id}
-              className="absolute rounded-lg flex items-center justify-center font-bold"
+              className={styles.tile}
               style={{
                 width: `${tileSize}px`,
                 height: `${tileSize}px`,
@@ -231,13 +231,10 @@ const NumbersGame: React.FC = () => {
           ))}
         </div>
       </div>
-      <div className="mt-4 text-white text-lg text-center">
-        {gameOver ? "Game Over!" : "Use arrow keys to move tiles"}
+      <div className={styles.message}>
+        {gameOver ? "Game Over!" : `Use arrow keys to move tiles (${gameMode} mode)`}
       </div>
-      <button 
-        className="mt-4 px-6 py-2 bg-white text-purple-500 rounded-lg font-bold text-lg hover:bg-purple-100 transition-colors"
-        onClick={resetGame}
-      >
+      <button className={styles.button} onClick={resetGame}>
         {gameOver ? "New Game" : "Reset"}
       </button>
     </div>

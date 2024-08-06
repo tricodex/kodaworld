@@ -12,13 +12,12 @@ import logging.config
 import json
 import redis.asyncio as redis
 from .dialogue_management.manager import DialogueManager
-from .ai71_api import AI71API
+from .api import AI71API, OpenAIAPI  # Importing both APIs
 from .database import SessionLocal, init_db, Curriculum
 from .gamification.system import GamificationSystem
 from .peer_matching.matcher import PeerMatcher
 from .academica.environment_generator import Academica
 from .models import CurriculumData, CurriculumOptimizationInput, ChallengeRequest
-
 
 # Set up logging
 log_config = {
@@ -64,10 +63,11 @@ app.add_middleware(
 
 # Initialize components
 dialogue_manager = DialogueManager()
-ai71_api = AI71API()
-gamification_system = GamificationSystem()
-peer_matcher = PeerMatcher()
-academica = Academica()
+ai71_api = AI71API()  # Using AI71API for dialogue manager and other components
+openai_api = OpenAIAPI()  # Using OpenAIAPI for specific components
+gamification_system = GamificationSystem(openai_api)  # Passing OpenAIAPI to these components
+peer_matcher = PeerMatcher(openai_api)
+academica = Academica(openai_api)
 
 # Initialize rate limiting
 @app.on_event("startup")
@@ -105,6 +105,12 @@ class EnvironmentGenerationRequest(BaseModel):
 class StudentInteractionRequest(BaseModel):
     environment: Dict
     interaction: str
+
+class ImageGenerationRequest(BaseModel):
+    prompt: str
+    size: str = "1024x1024"
+    quality: str = "standard"
+    n: int = 1
 
 @app.get("/")
 async def root():
@@ -197,7 +203,7 @@ async def update_achievements(student_id: str, progress: Dict[str, float], achie
     return {"achievementUpdates": updates}
 
 @app.post("/api/generate-challenges/{student_id}")
-async def                                       enges(student_id: str, progress: Dict[str, float], achievement_system: Dict):
+async def generate_challenges(student_id: str, progress: Dict[str, float], achievement_system: Dict):
     challenges = await gamification_system.generate_personalized_challenges(student_id, progress, achievement_system)
     return {"challenges": challenges}
 
@@ -216,7 +222,6 @@ async def generate_environment(request: EnvironmentGenerationRequest):
     environment = await academica.generate_environment(request.topic, request.complexity)
     return {"environment": environment}
 
-
 @app.post("/api/generate-challenge")
 async def generate_challenge(request: ChallengeRequest):
     try:
@@ -225,6 +230,49 @@ async def generate_challenge(request: ChallengeRequest):
     except Exception as e:
         logger.error(f"Error generating challenge: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate challenge")
+
+@app.post("/api/generate-image")
+async def generate_image(request: ImageGenerationRequest):
+    try:
+        response = await openai_api.create_image(
+            prompt=request.prompt,
+            size=request.size,
+            quality=request.quality,
+            n=request.n
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Error in image generation: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while generating the image")
+
+@app.post("/api/generate-environment-with-image")
+async def generate_environment_with_image(request: EnvironmentGenerationRequest):
+    try:
+        environment = await academica.generate_environment(request.topic, request.complexity)
+        
+        # Generate an image based on the environment description
+        image_prompt = f"An educational environment for {request.topic} at {request.complexity} level: {environment['description']}"
+        image_response = await openai_api.create_image(prompt=image_prompt)
+        
+        environment['image_url'] = image_response['data'][0]['url']
+        return {"environment": environment}
+    except Exception as e:
+        logger.error(f"Error generating environment with image: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate environment with image")
+
+@app.post("/api/generate-achievement-badge")
+async def generate_achievement_badge(achievement: Dict[str, str]):
+    try:
+        badge_prompt = f"An achievement badge for '{achievement['name']}': {achievement['description']}"
+        badge_response = await openai_api.create_image(
+            prompt=badge_prompt,
+            size="1024x1024",
+            quality="standard"
+        )
+        return {"badge_url": badge_response['data'][0]['url']}
+    except Exception as e:
+        logger.error(f"Error generating achievement badge: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate achievement badge")
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import styles from './LevoPuzzleGame.module.css';
 
 interface Piece {
   shape: number[][];
@@ -46,19 +47,17 @@ const LevoPuzzleGame: React.FC = () => {
   useEffect(() => {
     const storedHighScore = localStorage.getItem('levoPuzzleHighScore');
     if (storedHighScore) {
-      setGameState(prev => ({ ...prev, highScore: parseInt(storedHighScore) }));
+      setGameState((prev) => ({ ...prev, highScore: parseInt(storedHighScore) }));
     }
     console.log('Initial game state set');
   }, []);
 
   useEffect(() => {
     if (gameState.isPlaying && gameState.timeLeft > 0) {
-      const timer = setTimeout(() => 
-        setGameState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 })), 
-      1000);
+      const timer = setTimeout(() => setGameState((prev) => ({ ...prev, timeLeft: prev.timeLeft - 1 })), 1000);
       return () => clearTimeout(timer);
     } else if (gameState.timeLeft === 0) {
-      console.log('Time\'s up. Ending game.');
+      console.log("Time's up. Ending game.");
       endGame();
     }
   }, [gameState.isPlaying, gameState.timeLeft]);
@@ -97,12 +96,12 @@ const LevoPuzzleGame: React.FC = () => {
   }, [gameState]);
 
   const moveCursor = (dx: number, dy: number) => {
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       cursorPosition: {
         x: Math.max(0, Math.min(3, prev.cursorPosition.x + dx)),
         y: Math.max(0, Math.min(3, prev.cursorPosition.y + dy)),
-      }
+      },
     }));
     console.log('Cursor moved');
   };
@@ -127,7 +126,7 @@ const LevoPuzzleGame: React.FC = () => {
     const { x, y } = gameState.cursorPosition;
 
     if (canPlacePiece(piece, x, y)) {
-      const newGrid = gameState.grid.map(row => [...row]);
+      const newGrid = gameState.grid.map((row) => [...row]);
       piece.shape.forEach((row, dy) => {
         row.forEach((cell, dx) => {
           if (cell) {
@@ -136,7 +135,7 @@ const LevoPuzzleGame: React.FC = () => {
         });
       });
 
-      setGameState(prev => ({
+      setGameState((prev) => ({
         ...prev,
         grid: newGrid,
         availablePieces: prev.availablePieces.filter((_, i) => i !== prev.selectedPieceIndex),
@@ -152,13 +151,7 @@ const LevoPuzzleGame: React.FC = () => {
 
   const canPlacePiece = (piece: Piece, x: number, y: number): boolean => {
     return piece.shape.every((row, dy) =>
-      row.every((cell, dx) =>
-        cell === 0 || (
-          y + dy < 4 &&
-          x + dx < 4 &&
-          gameState.grid[y + dy][x + dx] === null
-        )
-      )
+      row.every((cell, dx) => cell === 0 || (y + dy < 4 && x + dx < 4 && gameState.grid[y + dy][x + dx] === null))
     );
   };
 
@@ -168,12 +161,10 @@ const LevoPuzzleGame: React.FC = () => {
       return;
     }
 
-    setGameState(prev => {
+    setGameState((prev) => {
       const newPieces = [...prev.availablePieces];
       const piece = newPieces[prev.selectedPieceIndex];
-      const rotatedShape = piece.shape[0].map((_, index) =>
-        piece.shape.map(row => row[index]).reverse()
-      );
+      const rotatedShape = piece.shape[0].map((_, index) => piece.shape.map((row) => row[index]).reverse());
       newPieces[prev.selectedPieceIndex] = { ...piece, shape: rotatedShape };
       console.log('Piece rotated');
       return { ...prev, availablePieces: newPieces };
@@ -189,7 +180,7 @@ const LevoPuzzleGame: React.FC = () => {
       return;
     }
 
-    const newGrid = gameState.grid.map(row => [...row]);
+    const newGrid = gameState.grid.map((row) => [...row]);
     const removedPiece = pieces[pieceIndex];
 
     for (let dy = 0; dy < 4; dy++) {
@@ -200,7 +191,7 @@ const LevoPuzzleGame: React.FC = () => {
       }
     }
 
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       grid: newGrid,
       availablePieces: [...prev.availablePieces, removedPiece],
@@ -209,7 +200,7 @@ const LevoPuzzleGame: React.FC = () => {
   };
 
   const checkWin = () => {
-    if (gameState.grid.every(row => row.every(cell => cell !== null))) {
+    if (gameState.grid.every((row) => row.every((cell) => cell !== null))) {
       const newScore = gameState.score + gameState.timeLeft * 10 * gameState.level;
       const newHighScore = Math.max(newScore, gameState.highScore);
 
@@ -218,7 +209,7 @@ const LevoPuzzleGame: React.FC = () => {
       }
 
       if (gameState.level < 3) {
-        setGameState(prev => ({
+        setGameState((prev) => ({
           ...prev,
           level: prev.level + 1,
           score: newScore,
@@ -238,16 +229,16 @@ const LevoPuzzleGame: React.FC = () => {
   };
 
   const endGame = () => {
-    setGameState(prev => ({ ...prev, isPlaying: false }));
+    setGameState((prev) => ({ ...prev, isPlaying: false }));
     setShowInstructions(true);
     console.log('Game ended');
   };
 
   return (
-    <div className="game-container">
-      <div className="game-board-container">
+    <div className={styles.gameContainer}>
+      <div className={styles.gameBoardContainer}>
         <motion.div 
-          className="game-board"
+          className={styles.gameBoard}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
@@ -256,8 +247,8 @@ const LevoPuzzleGame: React.FC = () => {
             row.map((cell, x) => (
               <motion.div 
                 key={`${x}-${y}`} 
-                className={`grid-cell ${gameState.cursorPosition.x === x && gameState.cursorPosition.y === y ? 'selected' : ''} ${
-                  gameState.selectedPieceIndex !== -1 && !canPlacePiece(gameState.availablePieces[gameState.selectedPieceIndex], x, y) ? 'invalid' : ''
+                className={`${styles.gridCell} ${gameState.cursorPosition.x === x && gameState.cursorPosition.y === y ? styles.gridCellSelected : ''} ${
+                  gameState.selectedPieceIndex !== -1 && !canPlacePiece(gameState.availablePieces[gameState.selectedPieceIndex], x, y) ? styles.gridCellInvalid : ''
                 }`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -265,7 +256,7 @@ const LevoPuzzleGame: React.FC = () => {
               >
                 {cell !== null && (
                   <motion.div 
-                    className="piece" 
+                    className={styles.piece} 
                     style={{ 
                       backgroundColor: pieces[cell].color,
                       gridTemplateColumns: `repeat(${pieces[cell].shape[0].length}, 1fr)`,
@@ -276,7 +267,7 @@ const LevoPuzzleGame: React.FC = () => {
                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                   >
                     {pieces[cell].shape.flat().map((_, i) => (
-                      <div key={i} className="piece-cell"></div>
+                      <div key={i} className={styles.pieceCell}></div>
                     ))}
                   </motion.div>
                 )}
@@ -285,50 +276,50 @@ const LevoPuzzleGame: React.FC = () => {
           )}
         </motion.div>
       </div>
-      <div className="info-panel">
+      <div className={styles.infoPanel}>
         <motion.div 
-          className="game-stats"
+          className={styles.gameStats}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h2 className="game-title">Levo&apos;s Shape Puzzle</h2>
-          <div className="stat-item">
-            <div className="stat-value">{gameState.level}</div>
-            <div className="stat-label">Level</div>
+          <h2 className={styles.gameTitle}>Levo&apos;s Shape Puzzle</h2>
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>{gameState.level}</div>
+            <div className={styles.statLabel}>Level</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-value">{gameState.score}</div>
-            <div className="stat-label">Score</div>
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>{gameState.score}</div>
+            <div className={styles.statLabel}>Score</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-value">{gameState.highScore}</div>
-            <div className="stat-label">High Score</div>
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>{gameState.highScore}</div>
+            <div className={styles.statLabel}>High Score</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-value">{gameState.timeLeft}</div>
-            <div className="stat-label">Time Left</div>
+          <div className={styles.statItem}>
+            <div className={styles.statValue}>{gameState.timeLeft}</div>
+            <div className={styles.statLabel}>Time Left</div>
           </div>
         </motion.div>
         <AnimatePresence>
           {showInstructions && (
             <motion.div 
-              className="instructions"
+              className={styles.instructions}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <h3>How to Play:</h3>
-              <p>Use arrow keys to move the cursor</p>
-              <p>Press Enter to place a piece</p>
-              <p>Press R to rotate the selected piece</p>
-              <p>Press Backspace to remove a piece</p>
-              <p>Fill the grid to complete the level!</p>
+              <h3 className={styles.instructionsTitle}>How to Play:</h3>
+              <p className={styles.instructionsText}>Use arrow keys to move the cursor</p>
+              <p className={styles.instructionsText}>Press Enter to place a piece</p>
+              <p className={styles.instructionsText}>Press R to rotate the selected piece</p>
+              <p className={styles.instructionsText}>Press Backspace to remove a piece</p>
+              <p className={styles.instructionsText}>Fill the grid to complete the level!</p>
             </motion.div>
           )}
         </AnimatePresence>
         <motion.div 
-          className="available-pieces"
+          className={styles.availablePieces}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
@@ -336,26 +327,26 @@ const LevoPuzzleGame: React.FC = () => {
           {gameState.availablePieces.map((piece, index) => (
             <motion.div 
               key={index}
-              className={`piece-preview ${gameState.selectedPieceIndex === index ? 'selected' : ''}`}
+              className={`${styles.piecePreview} ${gameState.selectedPieceIndex === index ? styles.piecePreviewSelected : ''}`}
               style={{ 
                 backgroundColor: piece.color,
                 display: 'grid',
                 gridTemplateColumns: `repeat(${piece.shape[0].length}, 1fr)`,
                 gridTemplateRows: `repeat(${piece.shape.length}, 1fr)`,
               }}
-              onClick={() => setGameState(prev => ({ ...prev, selectedPieceIndex: index }))}
+              onClick={() => setGameState((prev) => ({ ...prev, selectedPieceIndex: index }))}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
               {piece.shape.flat().map((cell, i) => (
-                <div key={i} className="piece-cell" style={{ backgroundColor: cell ? piece.color : 'transparent' }}></div>
+                <div key={i} className={styles.pieceCell} style={{ backgroundColor: cell ? piece.color : 'transparent' }}></div>
               ))}
             </motion.div>
           ))}
         </motion.div>
         {!gameState.isPlaying && (
           <motion.button 
-            className="button"
+            className={styles.button}
             onClick={startGame}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
