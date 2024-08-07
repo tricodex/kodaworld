@@ -1,5 +1,53 @@
+# ai71/models.py
 from pydantic import BaseModel, Field
-from typing import List, Dict
+from typing import List, Dict, Tuple
+from datetime import datetime
+
+class User(BaseModel):
+    id: int
+    username: str
+    email: str
+
+class UserProfileCreate(BaseModel):
+    skills: Dict[str, float]
+    learning_style: str
+    interests: List[str]
+
+class UserProfileResponse(UserProfileCreate):
+    id: int
+    user_id: int
+
+class AchievementCreate(BaseModel):
+    name: str
+    description: str
+    criteria: str
+    points: int
+
+class AchievementResponse(AchievementCreate):
+    id: int
+
+class UserAchievementResponse(BaseModel):
+    id: int
+    user_id: int
+    achievement: AchievementResponse
+    unlocked_at: datetime
+
+class UserEngagementCreate(BaseModel):
+    engagement_score: float
+
+class UserEngagementResponse(UserEngagementCreate):
+    id: int
+    user_id: int
+    timestamp: datetime
+
+class RecommendationCreate(BaseModel):
+    resource_title: str
+    resource_url: str
+
+class RecommendationResponse(RecommendationCreate):
+    id: int
+    user_id: int
+    recommended_at: datetime
 
 class CurriculumData(BaseModel):
     subject: str
@@ -49,3 +97,9 @@ class StudentInteractionRequest(BaseModel):
 class ChallengeGenerationRequest(BaseModel):
     environment: Environment
     difficulty: str = Field(pattern='^(Beginner|Intermediate|Advanced)$')
+    
+class ImageGenerationRequest(BaseModel):
+    prompt: str
+    size: str = Field(default="1024x1024", pattern="^(1024x1024)$")
+    quality: str = Field(default="standard", pattern="^(standard)$")
+    n: int = Field(default=1, gt=0, le=1)

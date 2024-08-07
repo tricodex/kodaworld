@@ -11,9 +11,11 @@ import { ChatMessage } from '@/types/api';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 
+type CharacterType = "koda" | "wake" | "levo" | "mina" | "ella";
+
 interface KodaProps {
   studentId: string;
-  character?: string;
+  character?: CharacterType;
 }
 
 const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {

@@ -44,7 +44,7 @@ const KodaHeader: React.FC = () => {
           </Link>
           <Link href="/curriculum-optimizer" passHref>
             <Button variant="ghost" className="text-black hover:bg-black/20">
-              Curriculum Optimizer
+              Curriculum Generator
             </Button>
           </Link>
           <Button variant="ghost" size="icon" aria-label="Notifications" className="text-black hover:bg-black/20"><Bell className="h-5 w-5" /></Button>

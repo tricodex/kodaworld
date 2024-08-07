@@ -1,11 +1,39 @@
 # ai71/peer_matching/matcher.py
 
-from ..api import OpenAIAPI
-import json
-import logging
-from typing import List, Dict, Tuple
-import asyncio
+"""
+KodaWorld PeerMatcher Module
+
+This module provides functionality to optimally form peer groups based on user profiles. It calculates compatibility between users
+and uses probabilistic methods to form groups that maximize overall compatibility. 
+
+Classes:
+    User: A Pydantic model representing a user's profile.
+    PeerMatcher: A class for finding optimal peer matches, evaluating group compatibility, and forming groups.
+
+Compatibility Metrics:
+    - Skill Complementarity: Measures how well users' skills complement each other.
+    - Learning Style Diversity: Ensures a mix of different learning styles within each group.
+    - Interest Overlap: Measures the overlap in interests among group members.
+    - Personality Dynamics: Assesses the balance of personality traits within the group.
+
+Methods:
+    - calculate_skill_complementarity: Calculates the complementarity of skills between two users.
+    - calculate_learning_style_diversity: Calculates the diversity of learning styles between two users.
+    - calculate_interest_overlap: Calculates the overlap in interests between two users.
+    - calculate_personality_dynamics: Calculates the balance of personality traits between two users.
+    - calculate_pair_compatibility: Calculates an overall compatibility score for a pair of users.
+    - generate_initial_groups: Generates initial random groups.
+    - evaluate_group: Evaluates the overall compatibility of a group.
+    - monte_carlo_group_formation: Uses a Monte Carlo simulation to form groups and optimize compatibility.
+
+Usage Example:
+    See the __main__ section for an example of how to use the PeerMatcher class to form groups and evaluate their compatibility.
+"""
+
+from typing import List, Dict
 from pydantic import BaseModel
+import numpy as np
+import logging
 
 class User(BaseModel):
     id: int
@@ -15,16 +43,8 @@ class User(BaseModel):
     interests: List[str]
     personality_traits: List[str]
 
-class GroupActivity(BaseModel):
-    title: str
-    description: str
-    duration: int
-    learning_outcomes: List[str]
-    required_resources: List[str]
-
 class PeerMatcher:
     def __init__(self):
-        self.ai_api = OpenAIAPI()
         self.logger = self._setup_logger()
 
     def _setup_logger(self):
@@ -36,202 +56,69 @@ class PeerMatcher:
         logger.addHandler(handler)
         return logger
 
-    async def find_optimal_matches(self, users: List[User], group_size: int) -> List[List[int]]:
-        try:
-            self.logger.info(f"Finding optimal matches for {len(users)} users in groups of {group_size}")
-            prompt = f"""
-            As an expert in educational psychology and group dynamics, your task is to create optimal study groups from the given user profiles.
-            
-            User Profiles:
-            {json.dumps([user.dict() for user in users], indent=2)}
-            
-            Desired group size: {group_size}
-            
-            Instructions:
-            1. Analyze each user's skills, learning style, interests, and personality traits.
-            2. Create groups that maximize the following criteria:
-               a) Skill complementarity: Balance high and low skill levels within each group.
-               b) Learning style diversity: Mix different learning styles to promote varied approaches.
-               c) Interest alignment: Group users with some shared interests to facilitate engagement.
-               d) Personality balance: Combine different personality traits for dynamic interactions.
-            3. Ensure each group has a mix of strengths that can support peer learning.
-            4. Consider potential synergies between users' skills and interests.
-            5. Aim for an overall balance of experience levels across all groups.
+    def calculate_skill_complementarity(self, user1: User, user2: User) -> float:
+        common_skills = set(user1.skills.keys()).intersection(set(user2.skills.keys()))
+        if not common_skills:
+            return 0.0
+        score = sum(abs(user1.skills[skill] - user2.skills[skill]) for skill in common_skills) / len(common_skills)
+        return 1 - score  # Higher score for higher complementarity
 
-            Output:
-            Return a JSON array of arrays, where each inner array represents a group and contains the user IDs of its members.
-            Include a brief explanation for each group formation, highlighting the key factors that influenced your decision.
+    def calculate_learning_style_diversity(self, user1: User, user2: User) -> float:
+        return 1.0 if user1.learning_style != user2.learning_style else 0.0
 
-            Example output format:
-            {{
-                "groups": [
-                    {{ "members": [0, 3, 5], "explanation": "This group balances..." }},
-                    {{ "members": [1, 2, 4], "explanation": "These users complement each other by..." }}
-                ]
-            }}
-            """
-            
-            response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in educational psychology and group formation, specializing in creating optimal study groups."},
-                {"role": "user", "content": prompt}
-            ])
-            
-            result = json.loads(response['choices'][0]['message']['content'])
-            self.logger.info(f"Successfully created {len(result['groups'])} study groups")
-            return result['groups']
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding JSON response: {str(e)}")
-            raise ValueError("Failed to parse AI response. Please try again.")
-        except Exception as e:
-            self.logger.error(f"Unexpected error in find_optimal_matches: {str(e)}")
-            raise
+    def calculate_interest_overlap(self, user1: User, user2: User) -> float:
+        common_interests = set(user1.interests).intersection(set(user2.interests))
+        total_interests = set(user1.interests).union(set(user2.interests))
+        return len(common_interests) / len(total_interests)
 
-    async def calculate_group_compatibility(self, group: List[User]) -> float:
-        try:
-            prompt = f"""
-            As an expert in group dynamics and educational psychology, analyze the compatibility of the following group:
+    def calculate_personality_dynamics(self, user1: User, user2: User) -> float:
+        common_traits = set(user1.personality_traits).intersection(set(user2.personality_traits))
+        total_traits = set(user1.personality_traits).union(set(user2.personality_traits))
+        return len(common_traits) / len(total_traits)
 
-            Group Members:
-            {json.dumps([user.dict() for user in group], indent=2)}
+    def calculate_pair_compatibility(self, user1: User, user2: User) -> float:
+        skill_complementarity = self.calculate_skill_complementarity(user1, user2)
+        learning_style_diversity = self.calculate_learning_style_diversity(user1, user2)
+        interest_overlap = self.calculate_interest_overlap(user1, user2)
+        personality_dynamics = self.calculate_personality_dynamics(user1, user2)
+        
+        # Weighted average of all factors
+        return (0.4 * skill_complementarity + 
+                0.2 * learning_style_diversity + 
+                0.2 * interest_overlap + 
+                0.2 * personality_dynamics)
 
-            Calculate a compatibility score from 0 to 1 based on:
-            1. Skill complementarity: How well do the members' skills complement each other?
-            2. Learning style synergy: How effectively can different learning styles in the group enhance overall learning?
-            3. Interest overlap: To what extent do shared interests provide common ground for collaboration?
-            4. Personality dynamics: How well do the personality traits combine for productive group work?
-            5. Potential for peer learning: How likely are members to benefit from each other's strengths?
+    def generate_initial_groups(self, users: List[User], group_size: int) -> List[List[int]]:
+        np.random.shuffle(users)
+        groups = [users[i:i + group_size] for i in range(0, len(users), group_size)]
+        return groups
 
-            Provide a detailed breakdown of your scoring, explaining the rationale for each factor.
-            Then, provide a final overall compatibility score.
+    def evaluate_group(self, group: List[User]) -> float:
+        n = len(group)
+        total_compatibility = 0.0
+        for i in range(n):
+            for j in range(i + 1, n):
+                total_compatibility += self.calculate_pair_compatibility(group[i], group[j])
+        return total_compatibility / (n * (n - 1) / 2)
 
-            Output format:
-            {{
-                "breakdown": {{
-                    "skill_complementarity": {{ "score": float, "explanation": "string" }},
-                    "learning_style_synergy": {{ "score": float, "explanation": "string" }},
-                    "interest_overlap": {{ "score": float, "explanation": "string" }},
-                    "personality_dynamics": {{ "score": float, "explanation": "string" }},
-                    "peer_learning_potential": {{ "score": float, "explanation": "string" }}
-                }},
-                "overall_score": float,
-                "summary": "A brief summary of the group's compatibility strengths and potential challenges."
-            }}
-            """
-            
-            response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in analyzing group dynamics and compatibility in educational settings."},
-                {"role": "user", "content": prompt}
-            ])
-            
-            result = json.loads(response['choices'][0]['message']['content'])
-            compatibility_score = result['overall_score']
-            self.logger.info(f"Calculated compatibility score for group: {compatibility_score}")
-            return result
-        except Exception as e:
-            self.logger.error(f"Unexpected error in calculate_group_compatibility: {str(e)}")
-            return {"overall_score": 0.0, "summary": "Error calculating compatibility."}
-
-    async def suggest_group_activities(self, group: List[User]) -> List[GroupActivity]:
-        try:
-            prompt = f"""
-            As an expert in collaborative learning and educational activity design, create engaging group activities for the following users:
-
-            Group Members:
-            {json.dumps([user.dict() for user in group], indent=2)}
-
-            Design 3 collaborative learning activities that:
-            1. Align with the group's collective skills and interests
-            2. Accommodate different learning styles present in the group
-            3. Encourage participation and leverage each member's strengths
-            4. Address areas where the group could collectively improve
-            5. Promote peer learning and knowledge sharing
-            6. Can be completed in 1-2 hours
-
-            For each activity, provide:
-            - A catchy and descriptive title
-            - A clear and concise description of the activity
-            - Estimated duration in minutes
-            - Specific learning outcomes or skills to be gained
-            - Required resources or materials
-
-            Output format:
-            [
-                {{
-                    "title": "string",
-                    "description": "string",
-                    "duration": int,
-                    "learning_outcomes": ["string", "string", ...],
-                    "required_resources": ["string", "string", ...]
-                }},
-                ...
-            ]
-            """
-            
-            response = await self.ai_api.chat_completion([
-                {"role": "system", "content": "You are an AI expert in designing collaborative learning activities for diverse student groups."},
-                {"role": "user", "content": prompt}
-            ])
-            
-            activities = [GroupActivity(**activity) for activity in json.loads(response['choices'][0]['message']['content'])]
-            self.logger.info(f"Generated {len(activities)} group activities")
-            return activities
-        except Exception as e:
-            self.logger.error(f"Unexpected error in suggest_group_activities: {str(e)}")
-            return []
-
-    async def generate_group_dynamics_visualization(self, group: List[User]) -> str:
-        try:
-            prompt = f"""
-            Create a visual representation of the group dynamics for the following users:
-
-            {json.dumps([user.dict() for user in group], indent=2)}
-
-            The image should:
-            1. Represent each user as a unique visual element (e.g., circle, icon)
-            2. Use connecting lines or overlapping areas to show skill complementarity and interest overlap
-            3. Use color coding to represent different learning styles
-            4. Incorporate symbols or icons to represent key personality traits
-            5. Visually indicate the potential for peer learning and collaboration
-
-            The overall composition should give an intuitive understanding of the group's compatibility and potential interactions.
-            """
-
-            image_response = await self.ai_api.create_image(prompt=prompt, size="1024x1024", quality="standard")
-            image_url = image_response['data'][0]['url']
-            self.logger.info(f"Generated group dynamics visualization: {image_url}")
-            return image_url
-        except Exception as e:
-            self.logger.error(f"Error generating group dynamics visualization: {str(e)}")
-            return ""
-
-    async def optimize_group_formation(self, users: List[User], group_size: int, iterations: int = 5) -> Tuple[List[List[int]], float]:
-        best_groups = None
+    def monte_carlo_group_formation(self, users: List[User], group_size: int, iterations: int = 1000) -> List[List[int]]:
+        best_groups = []
         best_score = -1
-        
-        for i in range(iterations):
-            self.logger.info(f"Optimizing group formation: iteration {i+1}/{iterations}")
-            groups = await self.find_optimal_matches(users, group_size)
-            total_score = 0
-            
-            for group in groups:
-                group_users = [users[member['members'][i]] for i in range(len(group['members']))]
-                compatibility = await self.calculate_group_compatibility(group_users)
-                total_score += compatibility['overall_score']
-            
-            average_score = total_score / len(groups)
-            
-            if average_score > best_score:
-                best_score = average_score
+
+        for _ in range(iterations):
+            np.random.shuffle(users)
+            groups = self.generate_initial_groups(users, group_size)
+            avg_score = np.mean([self.evaluate_group(group) for group in groups])
+
+            if avg_score > best_score:
+                best_score = avg_score
                 best_groups = groups
-        
-        self.logger.info(f"Completed group optimization. Best average compatibility: {best_score}")
+
+        self.logger.info(f"Best average compatibility score: {best_score}")
         return best_groups, best_score
 
-# Usage example:
-async def main():
-    matcher = PeerMatcher()
-    
-    # Example user profiles
+# Usage example
+if __name__ == "__main__":
     users = [
         User(id=0, name="Alice", skills={"math": 0.8, "programming": 0.6}, learning_style="visual", interests=["AI", "data science"], personality_traits=["creative", "analytical"]),
         User(id=1, name="Bob", skills={"math": 0.6, "programming": 0.9}, learning_style="kinesthetic", interests=["web development", "game design"], personality_traits=["outgoing", "practical"]),
@@ -241,21 +128,8 @@ async def main():
         User(id=5, name="Frank", skills={"math": 0.7, "programming": 0.7}, learning_style="auditory", interests=["database systems", "cloud computing"], personality_traits=["analytical", "team-player"]),
     ]
     
-    group_size = 3
-    
-    optimal_groups, average_compatibility = await matcher.optimize_group_formation(users, group_size)
-    print(f"Optimal Groups: {json.dumps(optimal_groups, indent=2)}")
-    print(f"Average Compatibility Score: {average_compatibility}")
-    
-    # Example of suggesting activities and generating visualization for the first group
-    if optimal_groups:
-        first_group = [users[i] for i in optimal_groups[0]['members']]
-        activities = await matcher.suggest_group_activities(first_group)
-        print("Suggested Group Activities:")
-        print(json.dumps([activity.dict() for activity in activities], indent=2))
-        
-        visualization_url = await matcher.generate_group_dynamics_visualization(first_group)
-        print(f"Group Dynamics Visualization URL: {visualization_url}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    matcher = PeerMatcher()
+    groups, best_score = matcher.monte_carlo_group_formation(users, group_size=3)
+    for group in groups:
+        print([user.name for user in group])
+    print(f"Best Average Compatibility Score: {best_score}")

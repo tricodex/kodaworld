@@ -1,5 +1,3 @@
-# ai71/api.py
-
 import os
 import aiohttp
 import asyncio
@@ -9,12 +7,37 @@ from typing import List, Dict, Any, Optional, Union
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from openai import OpenAI
-
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Add a new constant for development mode
+DEV_MODE = True  # Set this to False when deploying
+
+def log_conversation(api_name: str, action: str, data: Any):
+    if DEV_MODE:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"{timestamp} - {api_name} - {action}:\n{json.dumps(data, indent=2)}\n\n"
+        with open("conversation.log", "a") as log_file:
+            log_file.write(log_entry)
+
+
 class AI71API:
+    """
+    AI71API is a class that provides an interface to interact with the AI71 API.
+
+    Args:
+        api_key (Optional[str]): The API key to authenticate the requests. If not provided, it will be fetched from the environment variable 'AI71_API_KEY'.
+        base_url (str): The base URL of the AI71 API. Defaults to "https://api.ai71.ai/v1".
+
+    Attributes:
+        api_key (str): The API key used for authentication.
+        base_url (str): The base URL of the AI71 API.
+        headers (dict): The headers to be included in the API requests.
+        memory (ConversationBufferMemory): The memory object to store conversation history.
+
+    """
     def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.ai71.ai/v1"):
         self.api_key = api_key or os.getenv('AI71_API_KEY')
         if not self.api_key:
@@ -29,6 +52,7 @@ class AI71API:
 
     async def _make_request(self, endpoint: str, payload: Dict[str, Any], stream: bool = False, max_retries: int = 3) -> Union[Dict[str, Any], aiohttp.ClientResponse]:
         url = f"{self.base_url}/{endpoint}"
+        log_conversation("AI71API", f"Request to {endpoint}", payload)
         for attempt in range(max_retries):
             try:
                 async with aiohttp.ClientSession(headers=self.headers) as session:
@@ -37,7 +61,9 @@ class AI71API:
                         if stream:
                             return response
                         else:
-                            return await response.json()
+                            json_response = await response.json()
+                            log_conversation("AI71API", f"Response from {endpoint}", json_response)
+                            return json_response
             except aiohttp.ClientError as e:
                 logger.error(f"Attempt {attempt + 1} failed: Error making request to {endpoint}: {str(e)}")
                 if attempt == max_retries - 1:
@@ -68,6 +94,7 @@ class AI71API:
                 chunk = json.loads(line.decode('utf-8').split('data: ')[1])
                 full_response += chunk['choices'][0]['delta'].get('content', '')
                 yield chunk
+        log_conversation("AI71API", "Stream Chat Completion Full Response", full_response)
         await self._update_memory(messages, full_response)
 
     async def _update_memory(self, messages: List[Dict[str, str]], response: str):
@@ -105,6 +132,20 @@ class AI71API:
         self.memory.chat_memory.add_ai_message(content)
 
 class OpenAIAPI:
+    """
+    A class that provides an interface to interact with the OpenAI API.
+    """
+
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY not found. Please set it as an environment variable or provide it when initializing the class.")
+        
+        self.client = OpenAI(api_key=self.api_key)
+        self.memory = ConversationBufferMemory(return_messages=True)
+
+    # Rest of the class methods...
+class OpenAIAPI:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         if not self.api_key:
@@ -114,31 +155,18 @@ class OpenAIAPI:
         self.memory = ConversationBufferMemory(return_messages=True)
 
     def chat_completion(self, messages: List[Dict[str, str]], model: str = "gpt-4o-mini", **kwargs) -> Dict[str, Any]:
-        """
-        Create a chat completion using the OpenAI API.
-
-        :param messages: A list of message dictionaries.
-        :param model: The model to use for completion. Defaults to "gpt-4o-mini".
-        :param kwargs: Additional parameters to pass to the API call.
-        :return: The API response as a dictionary.
-        """
+        log_conversation("OpenAIAPI", "Chat Completion Request", {"messages": messages, "model": model, **kwargs})
         response = self.client.chat.completions.create(
             model=model,
             messages=messages,
             **kwargs
         )
+        log_conversation("OpenAIAPI", "Chat Completion Response", response)
         self._update_memory(messages, response.choices[0].message.content)
         return response
 
     def stream_chat_completion(self, messages: List[Dict[str, str]], model: str = "gpt-4o-mini", **kwargs):
-        """
-        Create a streaming chat completion using the OpenAI API.
-
-        :param messages: A list of message dictionaries.
-        :param model: The model to use for completion. Defaults to "gpt-4o-mini".
-        :param kwargs: Additional parameters to pass to the API call.
-        :return: A generator yielding response chunks.
-        """
+        log_conversation("OpenAIAPI", "Stream Chat Completion Request", {"messages": messages, "model": model, **kwargs})
         stream = self.client.chat.completions.create(
             model=model,
             messages=messages,
@@ -151,19 +179,11 @@ class OpenAIAPI:
                 content = chunk.choices[0].delta.content
                 full_response += content
                 yield chunk
+        log_conversation("OpenAIAPI", "Stream Chat Completion Full Response", full_response)
         self._update_memory(messages, full_response)
 
     def create_image(self, prompt: str, model: str = "dall-e-3", size: str = "1024x1024", quality: str = "standard", n: int = 1) -> Dict[str, Any]:
-        """
-        Create an image using DALL-E 3.
-        
-        :param prompt: A text description of the desired image(s).
-        :param model: The model to use for image generation. Defaults to "dall-e-3".
-        :param size: The size of the generated images. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3.
-        :param quality: The quality of the image that will be generated. Must be one of "standard" or "hd".
-        :param n: The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.
-        :return: The API response as a dictionary.
-        """
+        log_conversation("OpenAIAPI", "Create Image Request", {"prompt": prompt, "model": model, "size": size, "quality": quality, "n": n})
         response = self.client.images.generate(
             model=model,
             prompt=prompt,
@@ -171,6 +191,7 @@ class OpenAIAPI:
             quality=quality,
             n=n
         )
+        log_conversation("OpenAIAPI", "Create Image Response", response)
         return response
 
     def _update_memory(self, messages: List[Dict[str, str]], response: str):

@@ -1,19 +1,26 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { AnimationClass } from './AnimationClass';
+
+interface AudioContextType extends AudioContext {
+  webkitAudioContext?: typeof AudioContext;
+}
 
 const MusicVisualizer: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [speedlines, setSpeedlines] = useState<AnimationClass | null>(null);
 
   const initializeAudio = useCallback(() => {
     if (!audioContext) {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      const newAudioContext = new AudioContext();
+      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      const newAudioContext = new AudioContextClass();
       setAudioContext(newAudioContext);
 
       if (audioRef.current) {
@@ -27,14 +34,18 @@ const MusicVisualizer: React.FC = () => {
   }, [audioContext]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    const currentContainer = containerRef.current;
-    currentContainer.appendChild(renderer.domElement);
+    const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(canvas.width, canvas.height);
+
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const bars: THREE.Mesh[] = [];
@@ -46,21 +57,6 @@ const MusicVisualizer: React.FC = () => {
       scene.add(bar);
       bars.push(bar);
     }
-
-    const particleGeometry = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(numBars * 3);
-    const particleColors = new Float32Array(numBars * 3);
-    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-
-    const particleSystem = new THREE.Points(
-      particleGeometry,
-      new THREE.PointsMaterial({
-        size: 0.05,
-        vertexColors: true,
-      })
-    );
-    scene.add(particleSystem);
 
     camera.position.z = 50;
 
@@ -80,24 +76,7 @@ const MusicVisualizer: React.FC = () => {
 
           const hue = (i / numBars) * 360;
           (bars[i].material as THREE.MeshBasicMaterial).color.setHSL(hue / 360, 1, 0.5);
-
-          // Update particle positions and colors
-          particlePositions[i * 3] = bars[i].position.x;
-          particlePositions[i * 3 + 1] += 0.1; // Move particles upward
-          particlePositions[i * 3 + 2] = bars[i].position.z;
-
-          particleColors[i * 3] = (bars[i].material as THREE.MeshBasicMaterial).color.r;
-          particleColors[i * 3 + 1] = (bars[i].material as THREE.MeshBasicMaterial).color.g;
-          particleColors[i * 3 + 2] = (bars[i].material as THREE.MeshBasicMaterial).color.b;
-
-          // Reset particles that have moved too high
-          if (particlePositions[i * 3 + 1] > 30) {
-            particlePositions[i * 3 + 1] = bars[i].position.y + bars[i].scale.y;
-          }
         }
-
-        particleSystem.geometry.attributes.position.needsUpdate = true;
-        particleSystem.geometry.attributes.color.needsUpdate = true;
       }
 
       renderer.render(scene, camera);
@@ -106,23 +85,21 @@ const MusicVisualizer: React.FC = () => {
     animate();
 
     const handleResize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
+      if (container) {
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      }
     };
 
     window.addEventListener('resize', handleResize);
 
     return () => {
-      if (currentContainer) {
-        currentContainer.removeChild(renderer.domElement);
-      }
       window.removeEventListener('resize', handleResize);
-      scene.remove(particleSystem);
-      particleGeometry.dispose();
-      (particleSystem.material as THREE.PointsMaterial).dispose();
+      scene.clear();
+      renderer.dispose();
     };
   }, [analyser]);
 
@@ -141,7 +118,7 @@ const MusicVisualizer: React.FC = () => {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play().catch(error => console.error("Playback failed", error));
+        audioRef.current.play().catch((error: Error) => console.error("Playback failed", error));
         initializeAudio();
       }
       setIsPlaying(!isPlaying);
@@ -163,38 +140,41 @@ const MusicVisualizer: React.FC = () => {
     }
   };
 
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="relative w-full h-screen bg-black">
-      <div ref={containerRef} className="w-full h-full" />
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50">
-        <label htmlFor="audioFile" className="text-white">Choose an audio file:</label>
-        <input type="file" id="audioFile" accept=".mp3,.wav" onChange={handleFileUpload} className="mb-2 text-white" />
+    <div className="music-visualizer">
+      <div ref={containerRef} className="visualizer-container">
+        <canvas ref={canvasRef} className="visualizer-canvas" />
+      </div>
+      <div className="controls">
+        <label htmlFor="audioFile" className="file-input-label">Choose an audio file:</label>
+        <input type="file" id="audioFile" accept=".mp3,.wav" onChange={handleFileUpload} className="file-input" />
         <audio ref={audioRef} onTimeUpdate={handleTimeUpdate} onEnded={() => setIsPlaying(false)} />
-        <div className="flex items-center space-x-4">
-          <button onClick={togglePlayPause} className="text-white text-2xl focus:outline-none">
+        <div className="playback-controls">
+          <button onClick={togglePlayPause} className="play-pause-button">
             {isPlaying ? '❚❚' : '▶'}
           </button>
           <input
+            title="Audio Seek Bar"
             type="range"
             min={0}
             max={duration}
             value={currentTime}
             onChange={handleSeek}
-            className="w-full"
+            className="seek-bar"
           />
-          <span className="text-white">
+          <span className="time-display">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
         </div>
       </div>
     </div>
   );
-};
-
-const formatTime = (time: number) => {
-  const minutes = Math.floor(time / 60);
-  const seconds = Math.floor(time % 60);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
 export default MusicVisualizer;

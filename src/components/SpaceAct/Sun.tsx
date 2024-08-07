@@ -79,10 +79,12 @@ const FactItem = styled.li`
   margin-bottom: 1rem;
   padding-left: 1.5rem;
   position: relative;
+  color: #fff;
 
   &::before {
     content: "•";
     color: #ffd700;
+    text-color: #ffd700;
     position: absolute;
     left: 0;
     top: 0;
