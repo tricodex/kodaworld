@@ -69,7 +69,7 @@ const MarsPage = () => {
         <h2>Mars Facts</h2>
         <ul>
           <li>Fourth planet from the Sun</li>
-          <li>Often called the "Red Planet" due to its reddish appearance</li>
+          <li>Often called the &quot;Red Planet&quot; due to its reddish appearance</li>
           <li>Has two small moons: Phobos and Deimos</li>
           <li>Day length similar to Earth: 24 hours and 37 minutes</li>
         </ul>

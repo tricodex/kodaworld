@@ -4,9 +4,10 @@ from typing import List, Dict, Optional
 from datetime import datetime
 
 class User(BaseModel):
-    id: int
+    id: str
     username: str
     email: str
+    created_at: Optional[datetime] = None
     
 # class AITutorRequest(BaseModel):
 #     id: Optional[int] = None
@@ -70,18 +71,22 @@ class RecommendationResponse(RecommendationCreate):
     recommended_at: datetime
 
 class CurriculumData(BaseModel):
+    character: str
     subject: str
     units: List[str] = Field(min_items=1)
-    difficulty: str = Field(pattern='^(Beginner|Intermediate|Advanced)$')
+    difficulty: str = Field(pattern='^(Beginner|Intermediate|Advanced|beginner)$')
 
 class PerformanceData(BaseModel):
     chapter: str
     score: float = Field(ge=0, le=1)
+    
+# class LearningGoal(BaseModel):
+#     goal: str
 
 class CurriculumOptimizationInput(BaseModel):
     current_curriculum: CurriculumData
     performance_data: List[PerformanceData]
-    learning_goals: List[str] = Field(min_items=1)
+    # learning_goals: List[LearningGoal] #List[str] = Field(min_items=1)
 
 class UserProfile(BaseModel):
     id: int

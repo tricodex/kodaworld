@@ -38,6 +38,7 @@ const KodaPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const character = 'koda';
   const STUDENT_ID = 'student_01';
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,24 +61,32 @@ const KodaPage: React.FC = () => {
     fetchChatHistory();
   }, [fetchChatHistory]);
 
-  const handlePeerMatching = useCallback(async () => {
-    try {
-      const matches = await matchPeers([{ id: parseInt(studentId), username: `student_${studentId}`, email: `student_${studentId}@example.com` }], 2);
-      setPeerMatches(matches.flat());
-      addToast({
-        title: "Peer Matching",
-        description: "Successfully found peer matches!",
-      });
-    } catch (error) {
-      console.error('Error in peer matching:', error);
-      addToast({
-        title: "Error",
-        description: "Failed to find peer matches. Please try again.",
-      });
-    }
-  }, [studentId, addToast]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory, scrollToBottom]);
+
+  // const handlePeerMatching = useCallback(async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     const matches = await matchPeers([{ id: parseInt(studentId), username: `student_${studentId}`, email: `student_${studentId}@example.com` }], 2);
+  //     setPeerMatches(matches.flat());
+  //     addToast({
+  //       title: "Peer Matching",
+  //       description: "Successfully found peer matches!",
+  //     });
+  //   } catch (error) {
+  //     console.error('Error in peer matching:', error);
+  //     addToast({
+  //       title: "Error",
+  //       description: "Failed to find peer matches. Please try again.",
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }, [studentId, addToast]);
 
   const handleGetAchievements = useCallback(async () => {
+    setIsLoading(true);
     try {
       const userAchievements = await getUserAchievements(parseInt(studentId));
       setAchievements(userAchievements.map(a => a.achievement?.name || ''));
@@ -91,10 +100,13 @@ const KodaPage: React.FC = () => {
         title: "Error",
         description: "Failed to get achievements. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [studentId, addToast]);
 
   const handleGenerateChallenges = useCallback(async () => {
+    setIsLoading(true);
     try {
       const newChallenges = await generateChallenges(studentId, {}, {});
       setChallenges(newChallenges);
@@ -108,6 +120,8 @@ const KodaPage: React.FC = () => {
         title: "Error",
         description: "Failed to generate challenges. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [studentId, addToast]);
 
@@ -119,6 +133,7 @@ const KodaPage: React.FC = () => {
       });
       return;
     }
+    setIsLoading(true);
     try {
       const newEnvironment = await generateEnvironmentWithImage(topic, complexity as 'Beginner' | 'Intermediate' | 'Advanced');
       setEnvironment(newEnvironment);
@@ -132,19 +147,23 @@ const KodaPage: React.FC = () => {
         title: "Error",
         description: "Failed to generate environment. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [topic, complexity, addToast]);
 
   const handleSendMessage = useCallback(async () => {
     if (!currentMessage.trim()) return;
   
+    setIsLoading(true);
     try {
         const response = await sendChatMessage(character, {
             id: '123', // Use a default ID for development
             username: STUDENT_ID,
             email: "student@example.com", // Use a default email for development
             message: currentMessage
-          });      setChatHistory(prev => [...prev, { role: 'user', content: currentMessage }, { role: 'assistant', content: response.response }]);
+          });
+      setChatHistory(prev => [...prev, { role: 'user', content: currentMessage }, { role: 'assistant', content: response.response }]);
       setCurrentMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -152,10 +171,13 @@ const KodaPage: React.FC = () => {
         title: "Error",
         description: "Failed to send message. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [currentMessage, studentId, addToast, character]);
 
   const handleGetLearningProgress = useCallback(async () => {
+    setIsLoading(true);
     try {
       const progress = await getLearningProgress(studentId);
       setLearningProgress(progress);
@@ -169,10 +191,13 @@ const KodaPage: React.FC = () => {
         title: "Error",
         description: "Failed to get learning progress. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [studentId, addToast]);
 
   const handleGetNextSteps = useCallback(async () => {
+    setIsLoading(true);
     try {
       const steps = await getNextSteps(studentId);
       setNextSteps(steps);
@@ -186,30 +211,14 @@ const KodaPage: React.FC = () => {
         title: "Error",
         description: "Failed to get next steps. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [studentId, addToast]);
 
-  const handleOptimizeCurriculum = useCallback(async () => {
-    try {
-      const currentCurriculum: CurriculumData = { subject: "Math", units: ["Algebra", "Geometry"], difficulty: "Intermediate" };
-      const performanceData: PerformanceData[] = [{ chapter: "Algebra", score: 0.8 }];
-      const learningGoals: LearningGoal[] = [{ goal: "Master quadratic equations" }];
-      const optimizedCurriculum = await optimizeCurriculum(currentCurriculum, performanceData, learningGoals);
-      setCurriculum(optimizedCurriculum);
-      addToast({
-        title: "Curriculum Optimized",
-        description: "Successfully optimized your curriculum!",
-      });
-    } catch (error) {
-      console.error('Error optimizing curriculum:', error);
-      addToast({
-        title: "Error",
-        description: "Failed to optimize curriculum. Please try again.",
-      });
-    }
-  }, [addToast]);
 
   const handleRecommendResources = useCallback(async () => {
+    setIsLoading(true);
     try {
       const resources = await recommendResources(studentId, 'visual', 'mathematics', 'intermediate');
       setRecommendedResources(resources);
@@ -223,6 +232,8 @@ const KodaPage: React.FC = () => {
         title: "Error",
         description: "Failed to recommend resources. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [studentId, addToast]);
 
@@ -271,12 +282,12 @@ const KodaPage: React.FC = () => {
         </Card>
 
         {/* Peer Matching section */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Peer Matching</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={handlePeerMatching}>Find Peer Matches</Button>
+            <Button onClick={handlePeerMatching} disabled={isLoading}>Find Peer Matches</Button>
             {peerMatches.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold">Your Matches:</h3>
@@ -288,7 +299,7 @@ const KodaPage: React.FC = () => {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Gamification section */}
         <Card>
@@ -296,8 +307,8 @@ const KodaPage: React.FC = () => {
             <CardTitle>Gamification</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleGetAchievements} className="mr-2">View Achievements</Button>
-            <Button onClick={handleGenerateChallenges}>Generate Challenges</Button>
+            <Button onClick={handleGetAchievements} className="mr-2" disabled={isLoading}>View Achievements</Button>
+            <Button onClick={handleGenerateChallenges} disabled={isLoading}>Generate Challenges</Button>
             {achievements.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold">Your Achievements:</h3>
@@ -349,7 +360,7 @@ const KodaPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleGenerateEnvironment} className="mt-4">Generate Environment</Button>
+            <Button onClick={handleGenerateEnvironment} className="mt-4" disabled={isLoading}>Generate Environment</Button>
             {environment && (
               <div className="mt-4">
                 <h3 className="font-semibold">Generated Environment:</h3>
@@ -374,8 +385,8 @@ const KodaPage: React.FC = () => {
             <CardTitle>Learning Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleGetLearningProgress} className="mr-2">Get Learning Progress</Button>
-            <Button onClick={handleGetNextSteps}>Get Next Steps</Button>
+            <Button onClick={handleGetLearningProgress} className="mr-2" disabled={isLoading}>Get Learning Progress</Button>
+            <Button onClick={handleGetNextSteps} disabled={isLoading}>Get Next Steps</Button>
             {learningProgress > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold">Your Learning Progress:</h3>
@@ -395,28 +406,7 @@ const KodaPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Curriculum Optimization section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Curriculum Optimization</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleOptimizeCurriculum}>Optimize Curriculum</Button>
-            {curriculum && (
-              <div className="mt-4">
-                <h3 className="font-semibold">Optimized Curriculum:</h3>
-                <p>Subject: {curriculum.subject}</p>
-                <p>Difficulty: {curriculum.difficulty}</p>
-                <h4 className="font-semibold mt-2">Units:</h4>
-                <ul className="list-disc pl-5">
-                  {curriculum.units.map((unit, index) => (
-                    <li key={index}>{unit}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        
 
         {/* Resource Recommendations section */}
         <Card>
@@ -424,7 +414,7 @@ const KodaPage: React.FC = () => {
             <CardTitle>Resource Recommendations</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleRecommendResources}>Get Recommended Resources</Button>
+            <Button onClick={handleRecommendResources} disabled={isLoading}>Get Recommended Resources</Button>
             {recommendedResources.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold">Recommended Resources:</h3>
@@ -450,6 +440,7 @@ const KodaPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <Button onClick={async () => {
+              setIsLoading(true);
               try {
                 const profile = await getUserProfile(parseInt(studentId));
                 setUserProfile(profile);
@@ -463,8 +454,10 @@ const KodaPage: React.FC = () => {
                   title: "Error",
                   description: "Failed to get user profile. Please try again.",
                 });
+              } finally {
+                setIsLoading(false);
               }
-            }} className="mr-2">
+            }} className="mr-2" disabled={isLoading}>
               Get User Profile
             </Button>
             {userProfile && (
@@ -495,6 +488,7 @@ const KodaPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <Button onClick={async () => {
+              setIsLoading(true);
               try {
                 const engagement: UserEngagement = {
                   user_id: parseInt(studentId),
@@ -512,8 +506,10 @@ const KodaPage: React.FC = () => {
                   title: "Error",
                   description: "Failed to create user engagement. Please try again.",
                 });
+              } finally {
+                setIsLoading(false);
               }
-            }} className="mr-2">
+            }} className="mr-2" disabled={isLoading}>
               Create User Engagement
             </Button>
             {userEngagement && (

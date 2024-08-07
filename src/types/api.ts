@@ -10,8 +10,8 @@ export interface ChatMessage {
     response: string;
   }
   
-  export interface CurriculumData {
-    id?: string;
+  export interface CurriculumData { // id?: str; // Remove this field
+    character: string;
     subject: string;
     units: string[];
     difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
@@ -20,6 +20,12 @@ export interface ChatMessage {
   export interface PerformanceData {
     chapter: string;
     score: number;
+  }
+  
+  export interface CurriculumOptimizationInput {
+    current_curriculum: CurriculumData;
+    performance_data: PerformanceData[];
+    // learning_goals: string[];
   }
   
   export interface LearningGoal {
@@ -54,14 +60,7 @@ export interface ChatMessage {
     data?: any;
   }
   
-  // export interface User {
-  //   id?: number; // string; // number? 
-  //   username: string;
-  //   email: string;
-  //   hashed_password?: string;
-  //   created_at?: string;
-  //   // skills?: { [key: string]: number };
-  // }
+  
   
   export interface User {
     id: string; // Change this to string to match the server-side model

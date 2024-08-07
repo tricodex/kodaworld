@@ -4,6 +4,8 @@ from typing import List, Dict, Any
 from datetime import datetime
 import random
 from sqlalchemy.orm import Session
+import json
+from ..models import CurriculumData, PerformanceData #, LearningGoal
 
 
 
@@ -177,28 +179,53 @@ class DialogueManager:
             self.logger.error(f"Error processing input for student {student_id}: {str(e)}")
             return "I'm sorry, but I encountered an error. Please try again later."
 
-    async def optimize_curriculum(self, current_curriculum: Dict, performance_data: Dict, learning_goals: List[str]) -> Dict:
+    async def optimize_curriculum(self, current_curriculum: Dict, performance_data: List[Dict], db: Session) -> Dict: #learning_goals: List[str]
         try:
-            self.logger.info(f"Optimizing curriculum")
-            
-            # This is a simplified optimization. In a real implementation, you would use more sophisticated algorithms.
+            self.logger.info(f"Optimizing curriculum with current_curriculum={current_curriculum}, performance_data={performance_data}") #, learning_goals={learning_goals}")
+
+            # Simplified optimization logic
             optimized_curriculum = current_curriculum.copy()
-            avg_performance = sum(performance_data.values()) / len(performance_data) if performance_data else 0
-            
+            avg_performance = sum(pd['score'] for pd in performance_data) / len(performance_data) if performance_data else 0
+
             if avg_performance < 0.3:
                 optimized_curriculum["difficulty"] = "beginner"
             elif avg_performance < 0.7:
                 optimized_curriculum["difficulty"] = "intermediate"
             else:
                 optimized_curriculum["difficulty"] = "advanced"
-            
+
             # Add more topics based on learning goals
-            optimized_curriculum["topics"] = list(set(current_curriculum.get("topics", []) + learning_goals))
-            
+            optimized_curriculum["topics"] = list(set(current_curriculum.get("topics", []) )) #+ learning_goals
+
+            # Save the optimized curriculum to the database
+            db_curriculum = CurriculumData(
+                curriculum=json.dumps(optimized_curriculum),
+                character=current_curriculum["character"],
+                subject=current_curriculum["subject"],
+                difficulty=optimized_curriculum["difficulty"]
+            )
+            db.add(db_curriculum)
+            db.flush()  # This assigns an id to db_curriculum
+
+            self.logger.info(f"Saved curriculum with ID {db_curriculum.id}")
+
+            for pd in performance_data:
+                db_performance = PerformanceData(curriculum_id=db_curriculum.id, chapter=pd['chapter'], score=pd['score'])
+                db.add(db_performance)
+                self.logger.info(f"Saved performance data for chapter {pd['chapter']}")
+
+            # for goal in learning_goals:
+            #     db_goal = LearningGoal(curriculum_id=db_curriculum.id, goal=goal)
+            #     db.add(db_goal)
+            #     self.logger.info(f"Saved learning goal {goal}")
+
+            db.commit()
+            db.refresh(db_curriculum)
+
             return {
                 "optimized_curriculum": optimized_curriculum,
                 "performance_data": performance_data,
-                "learning_goals": learning_goals,
+                # "learning_goals": learning_goals,
             }
         except Exception as e:
             self.logger.error(f"Error optimizing curriculum: {str(e)}")

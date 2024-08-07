@@ -59,16 +59,16 @@ class PerformanceData(Base):
     curriculum = relationship("Curriculum", back_populates="performance_data")
     user = relationship("User", back_populates="performance_data")
 
-class LearningGoal(Base):
-    __tablename__ = "learning_goals"
+# class LearningGoal(Base):
+#     __tablename__ = "learning_goals"
 
-    id = Column(Integer, primary_key=True, index=True)
-    curriculum_id = Column(Integer, ForeignKey("curriculums.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
-    goal = Column(Text, nullable=False)
+#     id = Column(Integer, primary_key=True, index=True)
+#     curriculum_id = Column(Integer, ForeignKey("curriculums.id"))
+#     user_id = Column(Integer, ForeignKey("users.id"))
+#     goal = Column(Text, nullable=False)
 
-    curriculum = relationship("Curriculum", back_populates="learning_goals")
-    user = relationship("User", back_populates="learning_goals")
+#     curriculum = relationship("Curriculum", back_populates="learning_goals")
+#     user = relationship("User", back_populates="learning_goals")
 
 class ConversationHistory(Base):
     __tablename__ = "conversation_history"
@@ -145,7 +145,7 @@ class Recommendation(Base):
     user = relationship("User", back_populates="recommendations")
 
 User.performance_data = relationship("PerformanceData", back_populates="user")
-User.learning_goals = relationship("LearningGoal", back_populates="user")
+# User.learning_goals = relationship("LearningGoal", back_populates="user")
 User.conversations = relationship("ConversationHistory", back_populates="user")
 User.achievements = relationship("UserAchievement", back_populates="user")
 User.engagements = relationship("UserEngagement", back_populates="user")
@@ -153,7 +153,7 @@ User.profile = relationship("UserProfile", back_populates="user", uselist=False)
 User.recommendations = relationship("Recommendation", back_populates="user")
 
 Curriculum.performance_data = relationship("PerformanceData", back_populates="curriculum")
-Curriculum.learning_goals = relationship("LearningGoal", back_populates="curriculum")
+# Curriculum.learning_goals = relationship("LearningGoal", back_populates="curriculum")
 
 def init_db():
     Base.metadata.create_all(bind=engine)

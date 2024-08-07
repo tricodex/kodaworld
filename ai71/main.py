@@ -29,7 +29,7 @@ from .models import (
 )
 from .recommender_system.recommender import ResourceRecommender
 from .element_lab.element_gen import JSElementGenerator
-import uuid
+from datetime import datetime
 
 
 
@@ -144,15 +144,62 @@ async def root():
 #         logger.error(f"Error in AI tutor: {str(e)}")
 #         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
 
+# @app.post("/api/ai-tutor")
+# async def ai_tutor(request: AITutorRequest, db: Session = Depends(get_db)):
+#     try:
+#         logger.info(f"Received AI tutor request: {request}")
+        
+#         # Check if user exists, if not, create a new user
+#         user = db.query(User).filter(User.id == request.id).first()
+#         if not user:
+#             logger.info(f"User not found, creating new user with id: {request.id}")
+#             user = User(id=request.id, username=request.username, email=request.email, created_at=datetime.utcnow())
+#             db.add(user)
+#             db.commit()
+#             db.refresh(user)
+        
+#         history = await dialogue_manager.get_conversation_history(str(request.id), request.character, db)
+        
+#         context = [
+#             {"role": "system", "content": request.systemPrompt},
+#             *[{"role": "user" if msg.is_user else "assistant", "content": msg.content} for msg in history],
+#             {"role": "user", "content": request.message}
+#         ]
+        
+#         ai_response = await ai71_api.generate_with_memory(request.message, model="falcon-180b", messages=context)
+        
+#         character_response = await dialogue_manager.process_ai_response(ai_response, str(request.id), request.character, db)
+#         await dialogue_manager.process_user_input(request.message, str(request.id), request.character, db)
+        
+#         return {"response": character_response}
+#     except Exception as e:
+#         logger.exception(f"Error in AI tutor: {str(e)}")
+#         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+
+
+
+# @app.get("/api/conversation-history/{student_id}/{character}")
+# async def get_conversation_history(student_id: str, character: str, db: Session = Depends(get_db)):
+#     history = await dialogue_manager.get_conversation_history(student_id, character)
+#     return {"history": history}
+
+##### THIS IS FOR DB RETRIEVE, ABOVE
+
 @app.post("/api/ai-tutor")
 async def ai_tutor(request: AITutorRequest, db: Session = Depends(get_db)):
     try:
         logger.info(f"Received AI tutor request: {request}")
+        
+        # Check if user exists, if not, create a new user
         user = db.query(User).filter(User.id == request.id).first()
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        history = await dialogue_manager.get_conversation_history(str(request.id), request.character, db)
+            logger.info(f"User not found, creating new user with id: {request.id}")
+            user = User(id=request.id, username=request.username, email=request.email, created_at=datetime.utcnow())
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        history = await dialogue_manager.get_conversation_history(str(request.id), db)
         
         context = [
             {"role": "system", "content": request.systemPrompt},
@@ -162,14 +209,13 @@ async def ai_tutor(request: AITutorRequest, db: Session = Depends(get_db)):
         
         ai_response = await ai71_api.generate_with_memory(request.message, model="falcon-180b", messages=context)
         
-        character_response = await dialogue_manager.process_ai_response(ai_response, str(request.id), request.character, db)
-        await dialogue_manager.process_user_input(request.message, str(request.id), request.character, db)
+        character_response = await dialogue_manager.process_ai_response(ai_response, str(request.id), request.character)
+        await dialogue_manager.process_user_input(request.message, str(request.id), request.character)
         
         return {"response": character_response}
     except Exception as e:
         logger.exception(f"Error in AI tutor: {str(e)}")
         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
-
 
 @app.get("/api/conversation-history/{student_id}/{character}")
 async def get_conversation_history(student_id: str, character: str, db: Session = Depends(get_db)):
@@ -198,21 +244,20 @@ async def get_next_steps(student_id: str, db: Session = Depends(get_db)):
     return {"nextSteps": next_steps}
 
 @app.post("/api/optimize-curriculum")
-async def optimize_curriculum(request: CurriculumOptimizationInput, db: Session = Depends(get_db)):
-    optimized = await dialogue_manager.optimize_curriculum(
-        request.current_curriculum,
-        request.performance_data,
-        request.learning_goals,
-        db
-    )
+@app.post("/api/optimize-curriculum")
+async def optimize_curriculum(input_data: CurriculumOptimizationInput, db: Session = Depends(get_db)):
+    try:
+        result = await dialogue_manager.optimize_curriculum(
+            current_curriculum=input_data.current_curriculum.dict(),
+            performance_data=[pd.dict() for pd in input_data.performance_data],
+            # learning_goals=[lg.dict() for lg in input_data.learning_goals],
+            db=db
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
     
-    db_curriculum = Curriculum(curriculum=json.dumps(optimized))
-    db.add(db_curriculum)
-    db.commit()
-    db.refresh(db_curriculum)
-
-    return {"optimizedCurriculum": optimized}
-
 @app.get("/api/curriculum/{curriculum_id}")
 async def get_curriculum(curriculum_id: str, db: Session = Depends(get_db)):
     if curriculum_id == 'latest':

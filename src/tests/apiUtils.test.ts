@@ -233,7 +233,8 @@ describe('API Utilities', () => {
     describe('optimizeCurriculum', () => {
       it('should optimize curriculum', async () => {
         const mockCurriculum: CurriculumData = {
-          id: '1',
+          // id: '1',
+          character: 'levo',
           subject: 'Math',
           units: ['Algebra', 'Geometry'],
           difficulty: 'Intermediate'
@@ -241,17 +242,17 @@ describe('API Utilities', () => {
         fetchMock.mockResponseOnce(JSON.stringify({ optimizedCurriculum: mockCurriculum }));
 
         const result = await optimizeCurriculum(
-          { id: '1', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' },
+          { character: 'levo', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' },
           [{ chapter: 'Algebra', score: 80 }],
-          [{ goal: 'Master Geometry' }]
+          // ['Master Geometry'] // Change this to a string array
         );
 
         expect(result).toEqual(mockCurriculum);
         expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:8000/api/api/optimize-curriculum');
         expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toMatchObject({
-          currentCurriculum: { id: '1', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' },
+          currentCurriculum: { character: 'levo', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' },
           performanceData: [{ chapter: 'Algebra', score: 80 }],
-          learningGoals: [{ goal: 'Master Geometry' }]
+          // learningGoals: ['Master Geometry']
         });
       });
     });
@@ -259,7 +260,8 @@ describe('API Utilities', () => {
     describe('getCurriculum', () => {
       it('should fetch curriculum', async () => {
         const mockCurriculum: CurriculumData = {
-          id: '1',
+          // id: '1',
+          character: 'levo',
           subject: 'Math',
           units: ['Algebra', 'Geometry'],
           difficulty: 'Intermediate'
@@ -273,7 +275,6 @@ describe('API Utilities', () => {
       });
     });
 
-    // ... [Previous test cases remain the same] ...
 
     describe('matchPeers', () => {
       it('should match peers', async () => {
@@ -302,11 +303,11 @@ describe('API Utilities', () => {
         const mockAchievements = { achievement1: 'Description 1', achievement2: 'Description 2' };
         fetchMock.mockResponseOnce(JSON.stringify({ achievementSystem: mockAchievements }));
 
-        const result = await generateAchievements({ id: '1', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' });
+        const result = await generateAchievements({ character: 'levo', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' });
 
         expect(result).toEqual(mockAchievements);
         expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:8000/api/api/generate-achievements');
-        expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({ id: '1', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' });
+        expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({ character: 'levo', subject: 'Math', units: ['Algebra'], difficulty: 'Beginner' });
       });
     });
 

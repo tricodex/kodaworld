@@ -14,6 +14,7 @@ import {
   User,
   ApiError,
   AITutorRequest,
+  CurriculumOptimizationInput,
   ChatMessageRequest
 } from '@/types/api';
 
@@ -107,11 +108,30 @@ export const getNextSteps = async (studentId: string): Promise<string[]> => {
   }
 };
 
-export const optimizeCurriculum = async (currentCurriculum: CurriculumData, performanceData: PerformanceData[], learningGoals: LearningGoal[]): Promise<CurriculumData> => {
+// export const optimizeCurriculum = async (currentCurriculum: CurriculumData, performanceData: PerformanceData[], learningGoals: LearningGoal[]): Promise<CurriculumData> => {
+//   try {
+//     const response = await apiRequest<{ optimizedCurriculum: CurriculumData }>('/api/optimize-curriculum', {
+//       method: 'POST',
+//       body: JSON.stringify({ currentCurriculum, performanceData, learningGoals }),
+//     });
+//     return response.optimizedCurriculum;
+//   } catch (error) {
+//     throw error as ApiError;
+//   }
+// };
+
+export const optimizeCurriculum = async (
+  currentCurriculum: CurriculumData, 
+  performanceData: PerformanceData[], 
+  // learningGoals: LearningGoal
+): Promise<CurriculumData> => {
   try {
     const response = await apiRequest<{ optimizedCurriculum: CurriculumData }>('/api/optimize-curriculum', {
       method: 'POST',
-      body: JSON.stringify({ currentCurriculum, performanceData, learningGoals }),
+      body: JSON.stringify({ current_curriculum: currentCurriculum, performance_data: performanceData}), //, learning_goals: learningGoals }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
     return response.optimizedCurriculum;
   } catch (error) {

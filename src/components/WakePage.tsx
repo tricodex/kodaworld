@@ -84,12 +84,15 @@ export default function WakePage() {
     setIsLoading(true);
 
     try {
+      console.log('Sending message:', input);
       const response = await sendChatMessage('wake', {
-        id: '123', // Use a default ID for development
+        id: STUDENT_ID,
         username: STUDENT_ID,
-        email: "student@example.com", // Use a default email for development
+        email: `${STUDENT_ID}@example.com`,
         message: input
-      });      setChatMessages((prevMessages) => [...prevMessages, {
+      });
+      console.log('Received response:', response);
+      setChatMessages((prevMessages) => [...prevMessages, {
         role: 'assistant',
         content: response.response,
         timestamp: new Date().toISOString(),
@@ -100,11 +103,14 @@ export default function WakePage() {
         title: "Error",
         description: "Failed to send message. Please try again.",
       });
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     } finally {
       setIsLoading(false);
       scrollToBottom();
     }
-  }, [input, STUDENT_ID, addToast, scrollToBottom]);
+  }, [input, addToast, scrollToBottom]);
 
   const startRecording = () => {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();

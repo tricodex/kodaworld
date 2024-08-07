@@ -29,7 +29,7 @@ const KodaHeader: React.FC<KodaHeaderProps> = ({ inverse = false }) => {
         </Link>
         <div className="flex items-center space-x-4">
           <Link href="/koda-bg" passHref>
-            <Button variant="ghost" className={`${textColor} ${hoverBgColor}`}>BG</Button>
+            <Button variant="ghost" className={`${textColor} ${hoverBgColor}`}>Tag</Button>
           </Link>
           <Link href="/about" passHref>
             <Button variant="ghost" className={`${textColor} ${hoverBgColor}`}>About</Button>
