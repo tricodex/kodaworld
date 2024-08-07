@@ -163,7 +163,7 @@ const AboutPage: React.FC = () => {
     <div className="relative min-h-screen overflow-hidden">
       <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
       <div className="relative z-10">
-        <KodaHeader />
+        <KodaHeader inverse={true}/>
         <main className="container mx-auto px-4 py-8 flex flex-col items-center">
           <div className="bg-black bg-opacity-50 p-6 rounded-lg mb-8 max-w-3xl w-full">
             <h1 className="text-4xl font-bold mb-6 text-center text-white">Adventure Awaits in KodaWorld!</h1>

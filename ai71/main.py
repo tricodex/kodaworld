@@ -24,10 +24,16 @@ from .models import (
     UserProfileCreate, UserProfileResponse, AchievementCreate,
     UserAchievementResponse, UserEngagementResponse,
     RecommendationCreate, RecommendationResponse, User as UserModel,
-    PeerMatchingRequest, EnvironmentGenerationRequest, ImageGenerationRequest
+    PeerMatchingRequest, EnvironmentGenerationRequest, ImageGenerationRequest,
+    EnvironmentCreate, Environment as EnvironmentModel, AITutorRequest
 )
 from .recommender_system.recommender import ResourceRecommender
 from .element_lab.element_gen import JSElementGenerator
+import uuid
+
+
+
+
 
 # Set up logging
 log_config = {
@@ -104,35 +110,63 @@ async def root():
     logger.info("Root endpoint accessed")
     return {"message": "Welcome to the KodaWorld API"}
 
+# @app.post("/api/ai-tutor")
+# async def ai_tutor(request: AITutorRequest, db: Session = Depends(get_db)):
+#     try:
+#         user = None
+#         if request.id:
+#             user = db.query(User).filter(User.id == request.id).first()
+        
+#         if not user and request.email:
+#             user = db.query(User).filter(User.email == request.email).first()
+        
+#         if not user:
+#             # Create a temporary user or handle this case as needed
+#             user_id = "temp_" + str(uuid.uuid4())
+#         else:
+#             user_id = str(user.id)
+
+#         history = await dialogue_manager.get_conversation_history(user_id, request.username or "ai-tutor", db)
+        
+#         context = [
+#             {"role": "system", "content": "You are an AI tutor specialized in helping students learn various subjects. Provide detailed and helpful responses."},
+#             *[{"role": "user" if msg.is_user else "assistant", "content": msg.content} for msg in history],
+#             {"role": "user", "content": request.message}
+#         ]
+        
+#         ai_response = await ai71_api.generate_with_memory(request.message, model="falcon-180b", messages=context)
+        
+#         character_response = await dialogue_manager.process_ai_response(ai_response, user_id, request.username or "ai-tutor", db)
+#         await dialogue_manager.process_user_input(request.message, user_id, request.username or "ai-tutor", db)
+        
+#         return {"response": character_response}
+#     except Exception as e:
+#         logger.error(f"Error in AI tutor: {str(e)}")
+#         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+
 @app.post("/api/ai-tutor")
-@app.get("/", dependencies=[Depends(RateLimiter(times=100, seconds=5))])
-async def ai_tutor(request: UserModel, db: Session = Depends(get_db)):
+async def ai_tutor(request: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     try:
-        user = db.query(User).filter(User.id == request.id).first()
+        logger.info(f"Received AI tutor request: {request}")
+        user = db.query(User).filter(User.id == request['id']).first()
         if not user:
+            logger.warning(f"User not found: {request['id']}")
             raise HTTPException(status_code=404, detail="User not found")
 
-        history = await dialogue_manager.get_conversation_history(str(request.id), request.username or "ai-tutor", db)
+        response = await ai71_api.generate_with_memory(request['message'], model="falcon-180b", messages=[])
+        logger.info(f"Generated response: {response}")
         
-        context = [
-            {"role": "system", "content": "You are an AI tutor specialized in helping students learn various subjects. Provide detailed and helpful responses."},
-            *[{"role": "user" if msg.is_user else "assistant", "content": msg.content} for msg in history],
-            {"role": "user", "content": request.email}  # Using email as the message for this example
-        ]
-        
-        ai_response = await ai71_api.generate_with_memory(request.email, model="falcon-180b", messages=context)
-        
-        character_response = await dialogue_manager.process_ai_response(ai_response, str(request.id), request.username or "ai-tutor", db)
-        await dialogue_manager.process_user_input(request.email, str(request.id), request.username or "ai-tutor", db)
+        character_response = await dialogue_manager.process_ai_response(response, str(request['id']), request['username'])
+        await dialogue_manager.process_user_input(request['message'], str(request['id']), request['username'])
         
         return {"response": character_response}
     except Exception as e:
-        logger.error(f"Error in AI tutor: {str(e)}")
-        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+        logger.error(f"Error in AI tutor: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"An error occurred while processing your request: {str(e)}")
 
 @app.get("/api/conversation-history/{student_id}/{character}")
 async def get_conversation_history(student_id: str, character: str, db: Session = Depends(get_db)):
-    history = await dialogue_manager.get_conversation_history(student_id, character, db)
+    history = await dialogue_manager.get_conversation_history(student_id, character)
     return {"history": history}
 
 @app.post("/api/clear-history/{student_id}/{character}")
@@ -356,13 +390,14 @@ async def get_user_recommendations(user_id: int, db: Session = Depends(get_db)):
     recommendations = db.query(Recommendation).filter(Recommendation.user_id == user_id).all()
     return [RecommendationResponse.from_orm(recommendation) for recommendation in recommendations]
 
-@app.post("/api/environment")
-async def create_environment(environment: Environment, db: Session = Depends(get_db)):
+
+@app.post("/api/environment", response_model=EnvironmentModel)
+async def create_environment(environment: EnvironmentCreate, db: Session = Depends(get_db)):
     db_environment = Environment(**environment.dict())
     db.add(db_environment)
     db.commit()
     db.refresh(db_environment)
-    return environment
+    return EnvironmentModel.from_orm(db_environment)
 
 @app.get("/api/environment/{environment_id}")
 async def get_environment(environment_id: int, db: Session = Depends(get_db)):

@@ -59,19 +59,26 @@ export default function LevoPage() {
 
   const handleSendMessage = useCallback(async () => {
     if (!input.trim()) return;
-
+  
     const newMessage: ChatMessage = {
       role: 'user',
       content: input,
       timestamp: new Date().toISOString(),
     };
-
+  
     setChatMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputMessage('');
     setIsLoading(true);
-
+  
     try {
-      const response = await sendChatMessage('levo', input, STUDENT_ID);
+      console.log('Sending message:', input); // Add this log
+      const response = await sendChatMessage('levo', {
+        id: 123, // Use a default ID for development
+        username: STUDENT_ID,
+        email: "student@example.com", // Use a default email for development
+        message: input
+      });
+      console.log('Received response:', response); // Add this log
       setChatMessages((prevMessages) => [...prevMessages, {
         role: 'assistant',
         content: response.response,

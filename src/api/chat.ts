@@ -12,7 +12,8 @@ import {
   UserAchievement,
   Recommendation,
   User,
-  ApiError
+  ApiError,
+  AITutorRequest
 } from '@/types/api';
 
 const characterPrompts = {
@@ -23,18 +24,37 @@ const characterPrompts = {
   koda: "You are Koda, a friendly and knowledgeable Koda. You're here to help with any questions across various subjects, encouraging learning and exploration."
 };
 
-export const sendChatMessage = async (character: keyof typeof characterPrompts, message: string, id: string): Promise<ChatResponse> => {
+// export const sendChatMessage = async (character: keyof typeof characterPrompts, message: string, id: string): Promise<ChatResponse> => {
+//   try {
+//     return await apiRequest<ChatResponse>('/api/ai-tutor', {
+//       method: 'POST',
+//       body: JSON.stringify({ 
+//         message, 
+//         studentId: id, 
+//         systemPrompt: characterPrompts[character],
+//         character
+//       }),
+//     });
+//   } catch (error) {
+//     throw error as ApiError;
+//   }
+// };
+
+export const sendChatMessage = async (character: keyof typeof characterPrompts, request: AITutorRequest): Promise<ChatResponse> => {
   try {
-    return await apiRequest<ChatResponse>('/api/ai-tutor', {
+    console.log('Sending chat message:', { character, request }); // Add this log
+    const response = await apiRequest<ChatResponse>('/api/ai-tutor', {
       method: 'POST',
       body: JSON.stringify({ 
-        message, 
-        studentId: id, 
+        ...request,
         systemPrompt: characterPrompts[character],
         character
       }),
     });
+    console.log('Received response:', response); // Add this log
+    return response;
   } catch (error) {
+    console.error('Error in sendChatMessage:', error); // Add this log
     throw error as ApiError;
   }
 };

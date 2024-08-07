@@ -84,8 +84,12 @@ export default function MinaPage() {
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage('mina', input, STUDENT_ID);
-      setChatMessages((prevMessages) => [...prevMessages, {
+      const response = await sendChatMessage('mina', {
+        id: 123, // Use a default ID for development
+        username: STUDENT_ID,
+        email: "student@example.com", // Use a default email for development
+        message: input
+      });      setChatMessages((prevMessages) => [...prevMessages, {
         role: 'assistant',
         content: response.response,
         timestamp: new Date().toISOString(),

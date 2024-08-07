@@ -25,6 +25,8 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
   const [isFetching, setIsFetching] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
+  const STUDENT_ID = 'student_01';
+
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,8 +68,12 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage(character, input, studentId);
-      setMessages((prevMessages) => [...prevMessages, {
+      const response = await sendChatMessage('koda', {
+        id: 123, // Use a default ID for development
+        username: STUDENT_ID,
+        email: "student@example.com", // Use a default email for development
+        message: input
+      });      setMessages((prevMessages) => [...prevMessages, {
         role: 'assistant',
         content: response.response,
         timestamp: new Date().toISOString(),

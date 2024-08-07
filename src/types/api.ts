@@ -144,3 +144,10 @@ export interface ChatMessage {
     resource_title: string;
     resource_url: string;
   }
+
+  export interface AITutorRequest {
+    id: number;
+    username: string;
+    email: string;
+    message: string;
+  }

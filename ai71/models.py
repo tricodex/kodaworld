@@ -1,12 +1,24 @@
 # ai71/models.py
 from pydantic import BaseModel, Field
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional
 from datetime import datetime
 
 class User(BaseModel):
     id: int
     username: str
     email: str
+    
+# class AITutorRequest(BaseModel):
+#     id: Optional[int] = None
+#     username: Optional[str] = None
+#     email: Optional[str] = None
+#     message: str
+
+class AITutorRequest(BaseModel):
+    id: int
+    username: str
+    email: str
+    message: str
 
 class UserProfileCreate(BaseModel):
     skills: Dict[str, float]
@@ -103,3 +115,19 @@ class ImageGenerationRequest(BaseModel):
     size: str = Field(default="1024x1024", pattern="^(1024x1024)$")
     quality: str = Field(default="standard", pattern="^(standard)$")
     n: int = Field(default=1, gt=0, le=1)
+    
+class EnvironmentBase(BaseModel):
+    topic: str
+    complexity: str
+    description: str
+    elements: Dict[str, List[str]]
+
+class EnvironmentCreate(EnvironmentBase):
+    pass
+
+class Environment(EnvironmentBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True  # This replaces orm_mode=True in Pydantic v2

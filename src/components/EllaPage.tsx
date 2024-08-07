@@ -84,7 +84,12 @@ export default function EllaPage() {
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage('ella', input, STUDENT_ID);
+      const response = await sendChatMessage('ella', {
+        id: 123, // Use a default ID for development
+        username: STUDENT_ID,
+        email: "student@example.com", // Use a default email for development
+        message: input
+      });
       setChatMessages((prevMessages) => [...prevMessages, {
         role: 'assistant',
         content: response.response,

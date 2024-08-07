@@ -3,6 +3,9 @@ import logging
 from typing import List, Dict, Any
 from datetime import datetime
 import random
+from sqlalchemy.orm import Session
+
+
 
 class DialogueManager:
     def __init__(self):
@@ -80,7 +83,9 @@ class DialogueManager:
         })
         return character_response
 
-    async def get_conversation_history(self, student_id: str, character: str) -> List[Dict[str, str]]:
+    # async def get_conversation_history(self, student_id: str, character: str) -> List[Dict[str, str]]:
+    async def get_conversation_history(self, student_id: str, character: str):
+
         try:
             history = self.conversations.get(student_id, {}).get(character, [])
             self.logger.info(f"Retrieved conversation history for student {student_id} with character {character}")
@@ -109,8 +114,9 @@ class DialogueManager:
         except Exception as e:
             self.logger.error(f"Error collecting feedback from student {student_id}: {str(e)}")
 
-    async def analyze_learning_progress(self, student_id: str) -> Dict[str, Any]:
+    async def analyze_learning_progress(self, student_id: str, db: Session) -> Dict[str, Any]:
         try:
+            # Your existing code here, but make sure to use the db parameter if needed
             all_interactions = [
                 msg 
                 for character_history in self.conversations.get(student_id, {}).values() 
@@ -125,9 +131,10 @@ class DialogueManager:
             self.logger.error(f"Error analyzing learning progress for student {student_id}: {str(e)}")
             return {"progress": 0.0, "interaction_count": 0, "topic_coverage": 0}
 
-    async def recommend_next_steps(self, student_id: str) -> List[str]:
+    async def recommend_next_steps(self, student_id: str, db: Session) -> List[str]:
         try:
-            progress_data = await self.analyze_learning_progress(student_id)
+            # Your existing code here, but make sure to use the db parameter if needed
+            progress_data = await self.analyze_learning_progress(student_id, db)
             progress = progress_data["progress"]
             recommendations = []
             if progress < 0.3:

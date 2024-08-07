@@ -409,7 +409,7 @@ const SpacePage = () => {
 
   return (
     <>
-      <KodaHeader />
+      <KodaHeader inverse={true} />
       <GlobalStyle />
       <SolarSystemContainer>
         <Title>Solar System</Title>

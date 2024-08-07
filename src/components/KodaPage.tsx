@@ -37,6 +37,7 @@ const KodaPage: React.FC = () => {
   const { addToast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const character = 'koda';
+  const STUDENT_ID = 'student_01';
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,8 +139,12 @@ const KodaPage: React.FC = () => {
     if (!currentMessage.trim()) return;
   
     try {
-      const response = await sendChatMessage(character as 'wake' | 'levo' | 'mina' | 'ella' | 'koda', currentMessage, studentId);
-      setChatHistory(prev => [...prev, { role: 'user', content: currentMessage }, { role: 'assistant', content: response.response }]);
+        const response = await sendChatMessage(character, {
+            id: 123, // Use a default ID for development
+            username: STUDENT_ID,
+            email: "student@example.com", // Use a default email for development
+            message: currentMessage
+          });      setChatHistory(prev => [...prev, { role: 'user', content: currentMessage }, { role: 'assistant', content: response.response }]);
       setCurrentMessage('');
     } catch (error) {
       console.error('Error sending message:', error);

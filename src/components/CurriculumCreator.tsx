@@ -40,36 +40,75 @@ const CurriculumCreator = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToast();
 
+  // const handleCreate = async () => {
+  //   if (!subject || !difficulty || chapters.some(chapter => !chapter) || Object.keys(performanceData).length === 0 || learningGoals.some(goal => !goal)) {
+  //     addToast({
+  //       title: "Error",
+  //       description: "Please fill in all fields before creating the curriculum.",
+  //     });
+  //     return;
+  //   }
+
+  //   const currentCurriculum = {
+  //     character,
+  //     subject: subject === 'custom' ? customSubject : subject,
+  //     difficulty: difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
+  //     units: chapters.filter(chapter => chapter),
+  //   };
+  //   const performanceDataArray = Object.keys(performanceData).map(chapter => ({
+  //     chapter,
+  //     score: performanceData[chapter],
+  //   }));
+  //   const learningGoalsArray = learningGoals.filter(goal => goal).map(goal => ({
+  //     goal,
+  //   }));
+    
+
+  //   setIsLoading(true);
+  //   try {
+  //     const response = await optimizeCurriculum(
+  //       currentCurriculum,
+  //       performanceDataArray,
+  //       learningGoalsArray      );
+  //     setOptimizedCurriculum(JSON.stringify(response, null, 2));
+  //     addToast({
+  //       title: "Success",
+  //       description: "Curriculum created successfully!",
+  //     });
+  //   } catch (error) {
+  //     console.error('Error creating curriculum:', error);
+  //     addToast({
+  //       title: "Error",
+  //       description: "Failed to create curriculum. Please try again.",
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleCreate = async () => {
-    if (!subject || !difficulty || chapters.some(chapter => !chapter) || Object.keys(performanceData).length === 0 || learningGoals.some(goal => !goal)) {
+    if (!subject || !difficulty || chapters.some(chapter => !chapter) || Object.keys(performanceData).length === 0 || learningGoals) { // learningGoals.some(goal => !goal)
       addToast({
         title: "Error",
         description: "Please fill in all fields before creating the curriculum.",
       });
       return;
     }
-
+  
     const currentCurriculum = {
-      character,
       subject: subject === 'custom' ? customSubject : subject,
-      difficulty: difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
       units: chapters.filter(chapter => chapter),
+      difficulty: difficulty as 'Beginner' | 'Intermediate' | 'Advanced'
     };
-    const performanceDataArray = Object.keys(performanceData).map(chapter => ({
+    const performanceDataArray = Object.entries(performanceData).map(([chapter, score]) => ({
       chapter,
-      score: performanceData[chapter],
+      score
     }));
-    const learningGoalsArray = learningGoals.filter(goal => goal).map(goal => ({
-      goal,
-    }));
-    
-
+    // const learningGoalsArray = learningGoals.filter(goal => goal);
+  
     setIsLoading(true);
     try {
-      const response = await optimizeCurriculum(
-        currentCurriculum,
-        performanceDataArray,
-        learningGoalsArray      );
+      const response = await optimizeCurriculum(currentCurriculum, performanceDataArray, learningGoals);
       setOptimizedCurriculum(JSON.stringify(response, null, 2));
       addToast({
         title: "Success",
@@ -85,6 +124,7 @@ const CurriculumCreator = () => {
       setIsLoading(false);
     }
   };
+  
 
   const renderTooltip = (content: string) => (
     <TooltipProvider>
