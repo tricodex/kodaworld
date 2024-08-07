@@ -28,9 +28,9 @@ const KodaHeader: React.FC<KodaHeaderProps> = ({ inverse = false }) => {
           <span style={{ letterSpacing: 'inherit' }}>DA</span>
         </Link>
         <div className="flex items-center space-x-4">
-          <Link href="/koda-bg" passHref>
+          {/* <Link href="/koda-bg" passHref>
             <Button variant="ghost" className={`${textColor} ${hoverBgColor}`}>Tag</Button>
-          </Link>
+          </Link> */}
           <Link href="/about" passHref>
             <Button variant="ghost" className={`${textColor} ${hoverBgColor}`}>About</Button>
           </Link>

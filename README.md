@@ -1,4 +1,195 @@
-# Koda World
+# KodaWorld
+
+![KodaWorld](public/kodaworld_image.png)
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Technology Stack](#technology-stack)
+3. [Project Structure](#project-structure)
+4. [Key Components](#key-components)
+5. [Character Profiles](#character-profiles)
+6. [Features](#features)
+7. [API Integration](#api-integration)
+8. [UI Components](#ui-components)
+9. [Development and Setup](#development-and-setup)
+10. [Future Developments](#future-developments)
+11. [Contact](#contact)
+
+## Overview
+
+KodaWorld is an innovative AI-powered educational platform that transforms learning into an engaging adventure. Guided by a cast of charming animal companions, students embark on interactive quests, solve puzzles, and participate in hands-on experiments across various subjects. The platform's cutting-edge AI adapts to each learner's pace and style, ensuring a personalized and enjoyable educational experience.
+
+## Technology Stack
+
+- **Frontend**: Next.js, React, TypeScript
+- **3D Rendering**: Three.js, React Three Fiber
+- **State Management**: Zustand
+- **Styling**: Tailwind CSS, Styled Components
+- **Animations**: Framer Motion, GSAP
+- **Backend**: Python, FastAPI
+- **AI**: AI71 API (Falcon 180b, Falcon 11b), OpenAI API, Langchain
+- **Database**: PostgreSQL, SQLAlchemy
+- **Cache**: Redis
+- **Authentication**: JSON Web Tokens (JWT)
+
+## Project Structure
+
+The project is organized into two main parts:
+
+1. **Frontend** (`src/` directory)
+   - `app/`: Next.js pages and layouts
+   - `components/`: React components
+   - `styles/`: CSS and styled-component files
+   - `utils/`: Utility functions
+   - `api/`: API integration functions
+   - `types/`: TypeScript type definitions
+
+2. **Backend** (`ai71/` directory)
+   - `main.py`: FastAPI application entry point
+   - `api.py`: AI API interface
+   - `database.py`: Database models and connections
+   - `dialogue_management/`: Conversation management
+   - `curriculum/`: Curriculum generation and optimization
+   - `gamification/`: Gamification system
+   - `peer_matching/`: Peer matching algorithms
+   - `recommender_system/`: Resource recommendation system
+   - `element_lab/`: UI element generation
+
+## Key Components
+
+### AI API Interface (`ai71/api.py`)
+Manages interactions with AI services, including chat completions and memory management.
+
+### Dialogue Management (`ai71/dialogue_management/manager.py`)
+Handles conversations between students and AI characters, maintaining context and generating appropriate responses.
+
+### Curriculum Optimization (`ai71/curriculum/curriculum_gen.py`)
+Generates and optimizes curricula based on student performance and learning goals.
+
+### Gamification System (`ai71/gamification/system.py`)
+Implements achievement systems, challenges, and engagement scoring to enhance user motivation.
+
+### Peer Matching (`ai71/peer_matching/matcher.py`)
+Algorithmically matches students for group activities based on skills and compatibility.
+
+### Resource Recommender (`ai71/recommender_system/recommender.py`)
+Suggests personalized learning resources based on student profiles and current focus areas.
+
+## Character Profiles
+
+- **Wake the Musical Whale**: Guides students through music theory, instrument studies, and musical history.
+- **Levo the Scholarly Lion**: Specializes in science, math, and programming concepts.
+- **Mina the Globetrotting Monkey**: Explores geography, cultures, and space-related topics.
+- **Ella the Wise Elephant**: Brings history to life with engaging narratives and insights.
+- **Koda**: The AI tutor covering various subjects and learning strategies.
+
+## Features
+
+### Interactive Learning Environments
+- **Music Visualizer**: Engages students in audio-visual learning experiences.
+- **Particle Game**: Demonstrates scientific concepts through interactive particle simulations.
+- **Shape Puzzle**: Enhances spatial reasoning and problem-solving skills.
+- **Numbers Game**: Improves mathematical thinking with a 2048-style game.
+- **Space Exploration**: Interactive solar system model for astronomy education.
+
+### Adaptive Curriculum
+The platform dynamically adjusts learning paths based on student performance, interests, and goals.
+
+### Gamification
+Implements achievements, challenges, and a points system to boost engagement and motivation.
+
+### Peer Learning
+Facilitates collaborative learning through intelligent peer matching and group activities.
+
+### AI-Powered Tutoring
+Provides personalized assistance and explanations across various subjects.
+
+## API Integration
+
+The `src/api/chat.ts` file contains functions for interacting with the backend API, including:
+
+- Sending chat messages
+- Retrieving conversation history
+- Managing user profiles and achievements
+- Generating and optimizing curricula
+- Creating and managing learning environments
+
+## UI Components
+
+KodaWorld features a rich set of UI components, including:
+
+- **KodaHeader**: Navigation and user interface header.
+- **CharacterBase**: Base component for character interactions.
+- **ActivityLayout**: Layout for various learning activities.
+- **ElementLab**: Customizable UI elements for interactive content creation.
+
+## Development and Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```
+   npm install  # For frontend
+   pip install -r requirements.txt  # For backend
+   ```
+3. Set up environment variables (see `.env.example`)
+4. Run the development servers:
+   ```
+   npm run dev  # Frontend
+   uvicorn ai71.main:app --reload  # Backend
+   ```
+
+## Future Developments
+
+### Peer Matching
+
+**Current Status:**
+Forms study groups based on skill levels and compatibility but lacks real-time adjustments and scalability.
+
+**Enhancements:**
+- **Heuristics-Based Matching:** Use logic-based algorithms for dynamic, real-time group formation, ensuring efficient and adaptive groupings.
+- **Advanced Compatibility Metrics:** Integrate detailed metrics, including past collaboration success and real-time performance data, to enhance group compatibility.
+
+### Gamification
+
+**Current Status:**
+Enhances engagement through achievements and challenges but lacks personalization and long-term strategies.
+
+**Enhancements:**
+- **Rule-Based Systems:** Implement predefined rules for adaptive challenges and achievements. This approach personalizes the learning experience based on student progress.
+- **Varied Engagement Strategies:** Introduce diverse gamification elements like daily quests, streak rewards, and social achievements, using logic-based rules to maintain long-term engagement.
+
+### Academic Curriculum Optimizer
+
+**Current Status:**
+Personalizes learning paths but needs better data integration and recommendation accuracy.
+
+**Enhancements:**
+- **Data Management Techniques:** Use advanced data management for better integration and analysis, ensuring precise and actionable learning path recommendations. Logic-based methods can effectively manage and interpret diverse performance metrics.
+- **Feedback Loops:** Implement continuous improvement cycles using user feedback to refine recommendations, enhancing personalization.
+
+### Academica
+
+**Current Status:**
+Generates interactive environments but struggles with relevance and engagement.
+
+**Enhancements:**
+- **Heuristic Content Generation:** Use heuristic rules to create consistent and engaging educational content. This method ensures relevance and engagement.
+- **Enhanced Interaction Handling:** Improve processing and responses to student interactions using predefined logic, making interactions more meaningful and responsive.
+
+### Expanding Game and Educational Tools
+
+KodaWorld plans to introduce more game-based and educational tools accessible to all users. These tools will include interactive simulations, collaborative projects, and multimedia resources. By leveraging both educational theory and game design principles, these additions will make learning more immersive and enjoyable. The goal is to cater to diverse learning styles and interests, ensuring every student finds engaging and effective learning opportunities.
+## Contact
+
+For inquiries or support, please contact us at [kodaworld.edu@gmail.com](mailto:kodaworld.edu@gmail.com).
+
+---
+
+KodaWorld - Where Learning Becomes an Adventure!
+
+
+<!-- # Koda World
 
 ![KodaWorld](public/kodaworld_image.png)
 
@@ -379,4 +570,4 @@ class DialogueManager:
 - **Conversation Management**: Storing and retrieving conversation history.
 - **Feedback Collection**: Logging feedback from students.
 - **Progress Analysis**: Evaluating student interaction and progress.
-- **Curriculum Optimization**: Adjusting curriculum based on performance data.
+- **Curriculum Optimization**: Adjusting curriculum based on performance data. -->
