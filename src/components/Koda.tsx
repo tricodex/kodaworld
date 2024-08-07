@@ -69,7 +69,7 @@ const Koda: React.FC<KodaProps> = ({ studentId, character = "koda" }) => {
 
     try {
       const response = await sendChatMessage('koda', {
-        id: 123, // Use a default ID for development
+        id: '123', // Use a default ID for development
         username: STUDENT_ID,
         email: "student@example.com", // Use a default email for development
         message: input

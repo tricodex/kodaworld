@@ -13,7 +13,8 @@ import {
   Recommendation,
   User,
   ApiError,
-  AITutorRequest
+  AITutorRequest,
+  ChatMessageRequest
 } from '@/types/api';
 
 const characterPrompts = {
@@ -40,21 +41,22 @@ const characterPrompts = {
 //   }
 // };
 
-export const sendChatMessage = async (character: keyof typeof characterPrompts, request: AITutorRequest): Promise<ChatResponse> => {
+export const sendChatMessage = async (
+  character: keyof typeof characterPrompts,
+  data: ChatMessageRequest
+): Promise<ChatResponse> => {
   try {
-    console.log('Sending chat message:', { character, request }); // Add this log
-    const response = await apiRequest<ChatResponse>('/api/ai-tutor', {
+    const aiTutorRequest: AITutorRequest = {
+      ...data,
+      character,
+      systemPrompt: characterPrompts[character],
+    };
+
+    return await apiRequest<ChatResponse>('/api/ai-tutor', {
       method: 'POST',
-      body: JSON.stringify({ 
-        ...request,
-        systemPrompt: characterPrompts[character],
-        character
-      }),
+      body: JSON.stringify(aiTutorRequest),
     });
-    console.log('Received response:', response); // Add this log
-    return response;
   } catch (error) {
-    console.error('Error in sendChatMessage:', error); // Add this log
     throw error as ApiError;
   }
 };

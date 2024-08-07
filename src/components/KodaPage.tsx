@@ -140,7 +140,7 @@ const KodaPage: React.FC = () => {
   
     try {
         const response = await sendChatMessage(character, {
-            id: 123, // Use a default ID for development
+            id: '123', // Use a default ID for development
             username: STUDENT_ID,
             email: "student@example.com", // Use a default email for development
             message: currentMessage

@@ -14,11 +14,19 @@ class User(BaseModel):
 #     email: Optional[str] = None
 #     message: str
 
+# class AITutorRequest(BaseModel):
+#     id: int
+#     username: str
+#     email: str
+#     message: str
+
 class AITutorRequest(BaseModel):
-    id: int
-    username: str
+    id: str
+    username: Optional[str] = None
     email: str
     message: str
+    character: str
+    systemPrompt: str
 
 class UserProfileCreate(BaseModel):
     skills: Dict[str, float]

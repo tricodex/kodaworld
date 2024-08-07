@@ -59,26 +59,26 @@ export default function LevoPage() {
 
   const handleSendMessage = useCallback(async () => {
     if (!input.trim()) return;
-  
+
     const newMessage: ChatMessage = {
       role: 'user',
       content: input,
       timestamp: new Date().toISOString(),
     };
-  
+
     setChatMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputMessage('');
     setIsLoading(true);
-  
+
     try {
-      console.log('Sending message:', input); // Add this log
+      console.log('Sending message:', input);
       const response = await sendChatMessage('levo', {
-        id: 123, // Use a default ID for development
+        id: STUDENT_ID,
         username: STUDENT_ID,
-        email: "student@example.com", // Use a default email for development
+        email: `${STUDENT_ID}@example.com`,
         message: input
       });
-      console.log('Received response:', response); // Add this log
+      console.log('Received response:', response);
       setChatMessages((prevMessages) => [...prevMessages, {
         role: 'assistant',
         content: response.response,
@@ -90,11 +90,14 @@ export default function LevoPage() {
         title: "Error",
         description: "Failed to send message. Please try again.",
       });
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     } finally {
       setIsLoading(false);
       scrollToBottom();
     }
-  }, [input, STUDENT_ID, addToast, scrollToBottom]);
+  }, [input, addToast, scrollToBottom]);
 
   const startRecording = () => {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();

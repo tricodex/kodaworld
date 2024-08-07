@@ -54,14 +54,23 @@ export interface ChatMessage {
     data?: any;
   }
   
+  // export interface User {
+  //   id?: number; // string; // number? 
+  //   username: string;
+  //   email: string;
+  //   hashed_password?: string;
+  //   created_at?: string;
+  //   // skills?: { [key: string]: number };
+  // }
+  
   export interface User {
-    id?: number;
+    id: string; // Change this to string to match the server-side model
     username: string;
     email: string;
     hashed_password?: string;
     created_at?: string;
-    // skills?: { [key: string]: number };
   }
+  
   
   export interface UserProfile {
     id?: number;
@@ -146,7 +155,16 @@ export interface ChatMessage {
   }
 
   export interface AITutorRequest {
-    id: number;
+    id: string;
+    username: string;
+    email: string;
+    message: string;
+    character: string; // Add this field
+    systemPrompt: string; // Add this field
+  }
+
+  export interface ChatMessageRequest {
+    id: string;
     username: string;
     email: string;
     message: string;

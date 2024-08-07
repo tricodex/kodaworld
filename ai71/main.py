@@ -145,24 +145,31 @@ async def root():
 #         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
 
 @app.post("/api/ai-tutor")
-async def ai_tutor(request: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+async def ai_tutor(request: AITutorRequest, db: Session = Depends(get_db)):
     try:
         logger.info(f"Received AI tutor request: {request}")
-        user = db.query(User).filter(User.id == request['id']).first()
+        user = db.query(User).filter(User.id == request.id).first()
         if not user:
-            logger.warning(f"User not found: {request['id']}")
             raise HTTPException(status_code=404, detail="User not found")
 
-        response = await ai71_api.generate_with_memory(request['message'], model="falcon-180b", messages=[])
-        logger.info(f"Generated response: {response}")
+        history = await dialogue_manager.get_conversation_history(str(request.id), request.character, db)
         
-        character_response = await dialogue_manager.process_ai_response(response, str(request['id']), request['username'])
-        await dialogue_manager.process_user_input(request['message'], str(request['id']), request['username'])
+        context = [
+            {"role": "system", "content": request.systemPrompt},
+            *[{"role": "user" if msg.is_user else "assistant", "content": msg.content} for msg in history],
+            {"role": "user", "content": request.message}
+        ]
+        
+        ai_response = await ai71_api.generate_with_memory(request.message, model="falcon-180b", messages=context)
+        
+        character_response = await dialogue_manager.process_ai_response(ai_response, str(request.id), request.character, db)
+        await dialogue_manager.process_user_input(request.message, str(request.id), request.character, db)
         
         return {"response": character_response}
     except Exception as e:
-        logger.error(f"Error in AI tutor: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An error occurred while processing your request: {str(e)}")
+        logger.exception(f"Error in AI tutor: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+
 
 @app.get("/api/conversation-history/{student_id}/{character}")
 async def get_conversation_history(student_id: str, character: str, db: Session = Depends(get_db)):

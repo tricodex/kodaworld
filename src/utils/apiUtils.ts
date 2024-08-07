@@ -1,53 +1,37 @@
+// src/utils/apiUtils.ts
+
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '@/config/api';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
-
-interface ApiError extends Error {
+export interface ApiError extends Error {
   status?: number;
   data?: any;
 }
 
-export async function apiRequest<T>(endpoint: string, options: RequestInit = {}, retries = 0): Promise<T> {
+export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
-    console.log('Attempting to fetch from:', url);
-
-    let token;
-    if (typeof window !== 'undefined' && window.localStorage) {
-      token = localStorage.getItem('authToken');
-    }
+    console.log('Sending request to:', url, 'with options:', JSON.stringify(options, null, 2));
 
     const headers = new Headers(options.headers);
     headers.set('Content-Type', 'application/json');
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
 
     const response = await fetch(url, {
       ...options,
       headers,
     });
     
+    const responseData = await response.json();
+    console.log('API response:', responseData);
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
       const error = new Error(`HTTP error! status: ${response.status}`) as ApiError;
       error.status = response.status;
-      error.data = errorData;
-      
-      if (response.status === 429) {
-        // Rate limit exceeded
-        if (retries < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retries + 1)));
-          return apiRequest<T>(endpoint, options, retries + 1);
-        }
-      }
-      
+      error.data = responseData;
       throw error;
     }
     
-    return await response.json() as T;
+    return responseData as T;
   } catch (error) {
     console.error('API request failed:', error);
     if (typeof window !== 'undefined') {
@@ -57,7 +41,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {},
   }
 }
 
-export function handleApiError(error: any): void { // was apiError but changed to any
+export function handleApiError(error: ApiError): void {
   console.error('API Error:', error);
   let errorMessage = 'An unexpected error occurred. Please try again later.';
   
@@ -71,7 +55,7 @@ export function handleApiError(error: any): void { // was apiError but changed t
     errorMessage = 'The requested resource was not found.';
   } else if (error.status === 429) {
     errorMessage = 'Too many requests. Please wait a moment and try again.';
-  } else if (error.status ?? 0 >= 500) {
+  } else if (error.status && error.status >= 500) {
     errorMessage = 'A server error occurred. Please try again later.';
   }
 
