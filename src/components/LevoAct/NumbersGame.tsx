@@ -61,12 +61,13 @@ const NumbersGame: React.FC = () => {
       };
 
       const moveTile = (tile: Tile) => {
-        const vector: [number, number] = {
+        const vectors: { [key in 'up' | 'down' | 'left' | 'right']: [number, number] } = {
           'up': [-1, 0],
           'down': [1, 0],
           'left': [0, -1],
           'right': [0, 1]
-        }[direction];
+        };
+        const vector = vectors[direction];
 
         const [newRow, newCol] = findFarthestPosition(tile.row, tile.col, vector);
 
